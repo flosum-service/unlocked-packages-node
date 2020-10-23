@@ -1,0 +1,11 @@
+.idea
+doc
+node_modules
+.env
+.iml
+.ipr
+unlocked-packages-node.iml
+unlocked-packages-node.ipr
+unlocked-packages-node.iws
+package-lock.json
+
