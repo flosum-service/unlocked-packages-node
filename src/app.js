@@ -14,7 +14,7 @@ function startAPI() {
     log('--- configureObject');
     log(configureObject);
     server.listen(configureObject.port, configureObject.ip, () => {
-      log('Express server started in %s mode, listening to PORT: %d\nServer is available at %s', configureObject.env, configureObject.port, process.env.ENDPOINT);
+      log('Express server started in %s mode, listening to PORT: %d', configureObject.env, configureObject.port);
     });
   });
 }
