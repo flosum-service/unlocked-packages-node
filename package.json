@@ -2,10 +2,10 @@
   "name": "unlocked-packages-node",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/index.js",
+  "main": "src/index.js",
   "privat": true,
   "scripts": {
-    "start": "apidoc -i src -o doc && node",
+    "start": "apidoc -i src -o doc && node .",
     "dev": "apidoc -i src -o doc && nodemon",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
