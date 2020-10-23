@@ -1,0 +1,24 @@
+{
+  "env": {
+    "browser": true,
+    "commonjs": true,
+    "es2020": true
+  },
+  "extends": [
+    "airbnb-base"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 11
+  },
+  "rules": {
+    "prefer-promise-reject-errors": "off",
+    "global-require": 0,
+    "max-len": "off",
+    "arrow-body-style": ["error", "as-needed"],
+    "import/no-dynamic-require": "off",
+    "no-unused-vars": "off",
+    "no-param-reassign": "off",
+    "no-shadow": "off",
+    "no-plusplus": "off"
+  }
+}
