@@ -5,10 +5,10 @@ const nocache = require('nocache');
 
 const defaultRouter = require('../../routes/default-route');
 const defaultRouterError = require('../../routes/default-route-error');
-const createRouter = require('../../routes/create');
+const unlockedPackagesRouter = require('../../routes/unlocked-packages');
 
 // Create Express server with pre-defined set of middleware
-function configureExpress({ createRoot }) {
+function configureExpress({ unlockedPackages }) {
   const app = express();
 
   app.use(helmet());
@@ -21,7 +21,7 @@ function configureExpress({ createRoot }) {
    * with further request forwarding
    */
   app.use('/', defaultRouter);
-  app.use(createRoot, createRouter);
+  app.use(unlockedPackages, unlockedPackagesRouter);
   app.use('/', defaultRouterError);
 
   return app;

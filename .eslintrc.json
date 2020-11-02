@@ -19,6 +19,7 @@
     "no-unused-vars": "off",
     "no-param-reassign": "off",
     "no-shadow": "off",
-    "no-plusplus": "off"
+    "no-plusplus": "off",
+    "prefer-destructuring": ["error", {"object": true, "array": false}]
   }
 }

@@ -22,7 +22,7 @@ router.use((error, req, res) => {
   log(constants.STATUS_500_INTERNAL_SERVER_ERROR);
   return res.status(500)
     .send({
-      status: 'Error',
+      status: constants.ERROR,
       error: {
         message: constants.STATUS_500_INTERNAL_SERVER_ERROR,
       },
