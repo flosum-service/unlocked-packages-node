@@ -131,7 +131,7 @@ function setInstanceUrl(projectName, domain) {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
       }
-      const sfdxConfig = '{ "instanceUrl": "https://flosum-karpes-dev-ed.my.salesforce.com" }';
+      const sfdxConfig = `{ "instanceUrl": "https://${domain}" }`;
       fs.writeFile(`${dir}/sfdx-config.json`, sfdxConfig, ((err) => {
         if (err) {
           reject(err);
