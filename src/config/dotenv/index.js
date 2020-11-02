@@ -5,7 +5,7 @@ const configureObject = {
   env: process.env.NODE_ENV || constants.DEV_NODE_ENV,
   port: process.env.PORT || 8000,
   ip: process.env.IP || '0.0.0.0',
-  createRoot: '/create',
+  unlockedPackages: '/unlocked-packages',
 };
 
 const envConfigs = {
