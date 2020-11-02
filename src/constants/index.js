@@ -11,7 +11,6 @@ const START_CREATE_UNLOCKED_PACKAGE = 'Start Create Unlocked Package';
 const CALL_GET_COMPONENT_LIST = 'Start Create Unlocked Package';
 const ATTACHMENTS_DELETED = 'The definition of some of these components may have been removed.';
 const UNZIP_CATALOG_NAME = 'project_data';
-const SFDX_CONVERT_METADATA = 'sfdx force:mdapi:convert -r';
 const PACKAGE_NAME_MUST_BE_UNIQUE = 'The package name must be unique for the namespace.';
 const PACKAGE_WITH_THIS_NAME_IS_EXIST = 'The package with current name is exist.';
 const PROJECT_DIRECTORY_IS_EXIST = 'A project with these parameters already exists.';
@@ -27,9 +26,9 @@ function getSFDXConvertMetadata(path) {
   return `sfdx force:mdapi:convert -r ${path}`;
 }
 
-function getSFDXCreateUnlockedPackage(packageName, username, description) {
+function getSFDXCreateUnlockedPackage(packageName, username, description, sessionId) {
   description = description ? `-d '${description}'` : '';
-  return `sfdx force:package:create -n ${packageName} -t Unlocked -r force-app ${description} -v ${username}`;
+  return `sfdx force:package:create -n ${packageName} -t Unlocked -r force-app ${description} -v ${sessionId}`;
 }
 
 function getSFDXCreateUnlockedPackageVersion(packageName, username, key, versionName, versionDescription, versionNumber) {
@@ -50,7 +49,6 @@ module.exports = {
   START_CREATE_UNLOCKED_PACKAGE,
   ATTACHMENTS_DELETED,
   UNZIP_CATALOG_NAME,
-  SFDX_CONVERT_METADATA,
   CREATE_PACKAGE_REQUIRED_FIELDS,
   REQUIRED_FIELDS_ERROR,
   PACKAGE_NAME_MUST_BE_UNIQUE,

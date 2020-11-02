@@ -5,18 +5,18 @@ const constants = require('../../../constants');
 function devMode(body, projectName, resBody, log) {
   return Promise.resolve()
     .then(() => helper.callChildProcess(
-      constants.getSFDXCreateUnlockedPackage(body.packageName, body.username, body.description),
+      constants.getSFDXCreateUnlockedPackage(body.packageName, body.username, body.description, body.sessionId),
       log,
       { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
       true,
     ))
-    .then((result) => {
-      if (result === constants.PACKAGE_WITH_THIS_NAME_IS_EXIST) {
+    .then((stdout) => {
+      if (stdout === constants.PACKAGE_WITH_THIS_NAME_IS_EXIST) {
         log.log(constants.PACKAGE_WITH_THIS_NAME_IS_EXIST);
         return helper.addExistProjectToSFDXProject(projectName, body.packageName, log);
       }
       log.log('SFDX Unlocked Package Created');
-      log.log(result.stdout);
+      log.log(stdout);
       return Promise.resolve();
     })
     .then(() => helper.callChildProcess(
@@ -50,10 +50,24 @@ function createUnlockedPackage(body, log) {
             return helper.callChildProcess(constants.getSFDXCreateProject(projectName), log);
           }
         }))
+
+      // ffdfdf
+      .then(() => helper.callChildProcess(
+        `sfdx force:config:set instanceUrl='${body.domain}'`,
+        log,
+        { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
+      ))
+      .then((stdout) => {
+        log.log(stdout);
+        return Promise.resolve();
+      })
+
+      // dffdf
       .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), log))
       .then((result) => helper.convertToBuffer(result, log))
       .then((bufferList) => helper.unzipComponentList(bufferList, projectName, log))
       .then(() => helper.generatePackageXML(body.componentList, projectName, log))
+
       .then(() => helper.callChildProcess(
         constants.getSFDXConvertMetadata(`./${constants.UNZIP_CATALOG_NAME}`),
         log,

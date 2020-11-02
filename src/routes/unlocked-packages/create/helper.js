@@ -17,7 +17,7 @@ function callChildProcess(command, log, options = {}, isCreateProject = false) {
               resolve(constants.PACKAGE_WITH_THIS_NAME_IS_EXIST);
             }
           }
-          log.log(`Error Call Child Process ${command}\n${e}`);
+          log.log(`Error Call Child Process ${command}\n${e}\n${stderr}`);
           reject(e.message);
         } else {
           log.log(`End Call Child Process ${command}`);
