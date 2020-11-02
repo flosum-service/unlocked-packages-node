@@ -124,6 +124,26 @@ function b64toBuffer(b64Data, log) {
   });
 }
 
+function setInstanceUrl(projectName, domain) {
+  return new Promise((resolve, reject) => {
+    try {
+      const dir = `./${projectName}/.sfdx`;
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+      const sfdxConfig = `{ "instanceUrl": "https://${domain}" }`;
+      fs.writeFile(`${dir}/sfdx-config.json`, sfdxConfig, ((err) => {
+        if (err) {
+          reject(err);
+        }
+        resolve();
+      }));
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 function updateExistFile(existFile, zipFile) {
   return new Promise((resolve, reject) => {
     try {
@@ -315,6 +335,7 @@ function getInstallationURL(stdout) {
 
 module.exports = {
   checkProjectDirectory,
+  setInstanceUrl,
   callChildProcess,
   callComponentList,
   convertToBuffer,

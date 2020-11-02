@@ -5,7 +5,7 @@ const constants = require('../../../constants');
 function devMode(body, projectName, resBody, log) {
   return Promise.resolve()
     .then(() => helper.callChildProcess(
-      constants.getSFDXCreateUnlockedPackage(body.packageName, body.username, body.description, body.sessionId),
+      constants.getSFDXCreateUnlockedPackage(body.packageName, body.sessionId, body.description),
       log,
       { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
       true,
@@ -20,7 +20,7 @@ function devMode(body, projectName, resBody, log) {
       return Promise.resolve();
     })
     .then(() => helper.callChildProcess(
-      constants.getSFDXCreateUnlockedPackageVersion(body.packageName, body.username, body.versionKey, body.versionName, body.description, body.versionNumber),
+      constants.getSFDXCreateUnlockedPackageVersion(body.packageName, body.sessionId, body.versionKey, body.versionName, body.description, body.versionNumber),
       log,
       { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
     ))
@@ -50,24 +50,11 @@ function createUnlockedPackage(body, log) {
             return helper.callChildProcess(constants.getSFDXCreateProject(projectName), log);
           }
         }))
-
-      // ffdfdf
-      .then(() => helper.callChildProcess(
-        `sfdx force:config:set instanceUrl='${body.domain}'`,
-        log,
-        { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
-      ))
-      .then((stdout) => {
-        log.log(stdout);
-        return Promise.resolve();
-      })
-
-      // dffdf
+      .then(() => helper.setInstanceUrl(projectName, body.domain))
       .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), log))
       .then((result) => helper.convertToBuffer(result, log))
       .then((bufferList) => helper.unzipComponentList(bufferList, projectName, log))
       .then(() => helper.generatePackageXML(body.componentList, projectName, log))
-
       .then(() => helper.callChildProcess(
         constants.getSFDXConvertMetadata(`./${constants.UNZIP_CATALOG_NAME}`),
         log,
