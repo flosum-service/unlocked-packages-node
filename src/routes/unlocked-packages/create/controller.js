@@ -60,9 +60,9 @@ function createUnlockedPackage(body, log) {
         resBody.sfdxProject = sfdxProject;
         resolve(resBody);
       })
-      // .then(() => helper.removeProject(projectName, log))
-      .catch((e) => reject(e));
-    // .then(() => helper.removeProject(projectName, log));
+      .then(() => helper.removeProject(projectName, log))
+      .catch((e) => reject(e))
+      .then(() => helper.removeProject(projectName, log));
   });
 }
 
