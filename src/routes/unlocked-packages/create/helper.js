@@ -310,7 +310,6 @@ function getSFDXProject(projectName) {
           reject(e);
         }
         const sfdxProject = JSON.parse(data.toString('utf-8'));
-        console.log(sfdxProject);
         resolve(sfdxProject);
       });
     } catch (e) {
@@ -319,17 +318,15 @@ function getSFDXProject(projectName) {
   });
 }
 
-function getInstallationURL(stdout) {
+function getInstallationURL(sfdxProject, packageName) {
   return new Promise((resolve, reject) => {
     try {
-      const rowList = stdout.split('\n');
-      rowList.forEach((row) => {
-        if (row.includes('Package Installation URL')) {
-          const words = row.split(' ');
-          resolve(words[4]);
+      Object.keys(sfdxProject.packageAliases).forEach((f) => {
+        if (f.includes(`${packageName}@`)) {
+          resolve(`https://login.salesforce.com/packaging/installPackage.apexp?p0=${sfdxProject.packageAliases[f]}`);
         }
       });
-      reject(constants.PACKAGE_INSTALLATION_URL_NOT_FOUND);
+      reject();
     } catch (e) {
       reject(e);
     }

@@ -23,17 +23,7 @@ function devMode(body, projectName, resBody, log) {
       constants.getSFDXCreateUnlockedPackageVersion(body.packageName, body.sessionId, body.versionKey, body.versionName, body.description, body.versionNumber),
       log,
       { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
-    ))
-    .then((stdout) => {
-      stdout = ' Request in progress. Sleeping 30 seconds. Will wait a total of 600 more seconds before timing out. Current Status=\'Initializing\'\n Request in progress. Sleeping 30 seconds. Will wait a total of 570 more seconds before timing out. Current Status=\'Verifying metadata\'\n sfdx-project.json has been updated.\n Successfully created the package version [08c2w000000k9zUAAQ]. Subscriber Package Version Id: 04t2w000009F4ILAA0\n Package Installation URL: https://login.salesforce.com/packaging/installPackage.apexp?p0=04t2w000009F4ILAA0\n As an alternative, you can use the "sfdx force:package:install" command.';
-      log.log('SFDX Unlocked Package Version Created');
-      log.log(stdout);
-      return helper.getInstallationURL(stdout);
-    })
-    .then((installationURL) => {
-      resBody.installationURL = installationURL;
-      return Promise.resolve();
-    });
+    ));
 }
 
 function createUnlockedPackage(body, log) {
@@ -75,7 +65,11 @@ function createUnlockedPackage(body, log) {
       .then((sfdxProject) => {
         resBody.sfdxProject = JSON.stringify(sfdxProject);
         resBody.status = 'Completed';
-        resolve(resBody);
+        return helper.getInstallationURL(sfdxProject, body.packageName);
+      })
+      .then((installationURL) => {
+        resBody.installationURL = installationURL;
+        return Promise.resolve();
       })
       .then(() => helper.callUpdateInfo(resBody, body.domain, body.sessionId, log))
       .then((r) => resolve(r))
