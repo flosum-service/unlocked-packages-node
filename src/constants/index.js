@@ -28,15 +28,15 @@ function getSFDXConvertMetadata(path) {
 }
 
 function getSFDXCreateUnlockedPackage(packageName, sessionId, description) {
-  description = description ? `-d '${description}'` : '';
+  description = description ? `-d "${description}"` : '';
   return `sfdx force:package:create -n "${packageName}" -t Unlocked -r force-app ${description} -v ${sessionId}`;
 }
 
 function getSFDXCreateUnlockedPackageVersion(packageName, sessionId, key, versionName, versionDescription, versionNumber) {
-  versionDescription = versionDescription ? `-e '${versionDescription}'` : '';
-  versionName = versionName ? `-a ${versionName}` : '';
+  versionDescription = versionDescription ? `-e "${versionDescription}"` : '';
+  versionName = versionName ? `-a "${versionName}"` : '';
   versionNumber = versionNumber ? `-n ${versionNumber}` : '';
-  return `sfdx force:package:version:create -p "${packageName}" -v ${sessionId} -k ${key} -t Unlocked -d force-app "${versionName}" ${versionDescription} ${versionNumber} --wait 10`;
+  return `sfdx force:package:version:create -p "${packageName}" -v ${sessionId} -k "${key}" -t Unlocked -d force-app ${versionName} ${versionDescription} ${versionNumber} --wait 10`;
 }
 module.exports = {
   SUCCESS,
