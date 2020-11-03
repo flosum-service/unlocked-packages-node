@@ -13,7 +13,7 @@ function devMode(body, projectName, resBody, log) {
     .then((stdout) => {
       if (stdout === constants.PACKAGE_WITH_THIS_NAME_IS_EXIST) {
         log.log(constants.PACKAGE_WITH_THIS_NAME_IS_EXIST);
-        return helper.addExistProjectToSFDXProject(projectName, body.packageName, log);
+        return Promise.reject(constants.PACKAGE_NAME_MUST_BE_UNIQUE);
       }
       log.log('SFDX Unlocked Package Created');
       log.log(stdout);
@@ -37,7 +37,10 @@ function devMode(body, projectName, resBody, log) {
 }
 
 function createUnlockedPackage(body, log) {
-  const resBody = {};
+  const resBody = {
+    tempLogId: body.tempLogId,
+    unlockedPackageId: body.unlockedPackageId,
+  };
   return new Promise((resolve, reject) => {
     const projectName = `${body.orgId}_${body.userId}_${body.timestamp}`;
     log.log('Start Create Unlocked Package');
@@ -70,11 +73,19 @@ function createUnlockedPackage(body, log) {
       })
       .then(() => helper.getSFDXProject(projectName))
       .then((sfdxProject) => {
-        resBody.sfdxProject = sfdxProject;
+        resBody.sfdxProject = JSON.stringify(sfdxProject);
+        resBody.status = 'Completed';
         resolve(resBody);
       })
+      .then(() => helper.callUpdateInfo(resBody, body.domain, body.sessionId, log))
+      .then((r) => resolve(r))
       .then(() => helper.removeProject(projectName, log))
-      .catch((e) => reject(e))
+      .catch((e) => {
+        const error = typeof e === 'string' ? e : JSON.stringify(e);
+        resBody.status = 'Error';
+        resBody.error = error;
+        return helper.callUpdateInfo(resBody, body.domain, body.sessionId, log).then(() => reject(e));
+      })
       .then(() => helper.removeProject(projectName, log));
   });
 }

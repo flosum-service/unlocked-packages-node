@@ -32,21 +32,9 @@ router.post('/', (req, res) => {
   }
 
   controller.createUnlockedPackage(req.body, log)
-    .then((resBody) => {
-      log.log('--- Success');
-      resBody.logs = log.logs;
-      return res.status(200).send(resBody);
-    })
-    .catch((e) => {
-      log.log('--- Error');
-      res.status(400).send({
-        status: constants.ERROR,
-        error: {
-          message: e,
-          logs: log.logs,
-        },
-      });
-    });
+    .then(() => log.log('Completed'))
+    .catch((e) => log.log(`Error\n${e}`));
+  return res.status(200).send('The process of creating an unlocked package has already begun.');
 });
 
 module.exports = router;

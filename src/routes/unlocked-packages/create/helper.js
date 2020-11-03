@@ -84,12 +84,15 @@ function callComponentList(domain, sessionId, attachmentIdList, log, componentsW
     try {
       const headers = {
         Authorization: `OAuth ${sessionId}`,
+        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQNm5dR52eF5TqkPYRQ7XtAdeo96i_yiUHIIfTKfZLMffzRwkJ7YcFZaaHX0Ap_Fkh6QjbqAkW9HZw0I4bKEzxFXQemuf',
         'Content-Type': 'application/json',
       };
+      // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
       const url = `https://${domain}/services/apexrest/unlocked-packages`;
-      const body = { attachmentIdList };
+      const body = { methodType: constants.METHOD_TYPE_GET_ATTACHMENTS, body: JSON.stringify(attachmentIdList) };
       axios.post(url, body, { headers }).then((response) => {
-        const { data } = response;
+        let { data } = response;
+        data = JSON.parse(data);
         log.log(`Component List Length, ${data.recordList.length}`);
         componentsWithAttachmentList.push(...data.recordList);
         if (data.idList && data.idList.length) {
@@ -333,6 +336,34 @@ function getInstallationURL(stdout) {
   });
 }
 
+function callUpdateInfo(resBody, domain, sessionId, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start call update info');
+      resBody.logs = log.logs;
+      const headers = {
+        Authorization: `OAuth ${sessionId}`,
+        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQNm5dR52eF5TqkPYRQ7XtAdeo96i_yiUHIIfTKfZLMffzRwkJ7YcFZaaHX0Ap_Fkh6QjbqAkW9HZw0I4bKEzxFXQemuf',
+        'Content-Type': 'application/json',
+      };
+      // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
+      const url = `https://${domain}/services/apexrest/unlocked-packages`;
+
+      const body = { methodType: constants.METHOD_TYPE_UPDATE_INFO, body: JSON.stringify(resBody) };
+      axios.post(url, body, { headers }).then((response) => {
+        log.log('response');
+        resolve(response);
+        log.log('End Call Update Info');
+      }).catch((e) => {
+        log.log(`Error Call Update Info\n${e}`);
+        reject(e);
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 module.exports = {
   checkProjectDirectory,
   setInstanceUrl,
@@ -345,4 +376,5 @@ module.exports = {
   getInstallationURL,
   removeProject,
   addExistProjectToSFDXProject,
+  callUpdateInfo,
 };
