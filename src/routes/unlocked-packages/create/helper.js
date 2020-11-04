@@ -78,7 +78,7 @@ function generatePackageXML(componentList, projectName, log) {
   });
 }
 
-function callComponentList(domain, sessionId, attachmentIdList, log, componentsWithAttachmentList = []) {
+function callComponentList(domain, sessionId, attachmentIdList, attachmentsCount, log, componentsWithAttachmentList = []) {
   log.log('Start Call Component List');
   return new Promise((resolve, reject) => {
     try {
@@ -96,8 +96,12 @@ function callComponentList(domain, sessionId, attachmentIdList, log, componentsW
         log.log(`Component List Length, ${data.recordList.length}`);
         componentsWithAttachmentList.push(...data.recordList);
         if (data.idList && data.idList.length) {
-          callComponentList(domain, sessionId, data.idList, log, componentsWithAttachmentList).then((result) => resolve(result));
-        } else if (componentsWithAttachmentList.length === attachmentIdList.length) {
+          callComponentList(domain, sessionId, data.idList, attachmentsCount, log, componentsWithAttachmentList)
+            .then((result) => resolve(result))
+            .catch((e) => {
+              reject(e);
+            });
+        } else if (componentsWithAttachmentList.length === attachmentsCount) {
           log.log('End Call Component List');
           resolve(componentsWithAttachmentList);
         } else {
@@ -232,25 +236,40 @@ function unzipBuffer(buf, i, projectName, log) {
       const zip = new AdmZip(buf);
       const zipEntries = zip.getEntries();
       const projectDataPath = `${projectName}/${constants.UNZIP_CATALOG_NAME}`;
-      const fullPath = `${projectDataPath}/${zipEntries[0].entryName}`;
-      const zipFile = zipEntries[0].getData().toString('utf-8');
-      const isExistObject = fs.existsSync(fullPath);
-      if (!isExistObject) {
-        zip.extractAllTo(projectDataPath, false);
+      let fullPath = `${projectDataPath}/`;
+      let isDirectory = true;
+      zipEntries.forEach((z) => {
+        if (isDirectory) {
+          isDirectory = z.isDirectory;
+        }
+        fullPath = `${projectDataPath}/${z.entryName}`;
+        const isExistObject = fs.existsSync(fullPath);
+        if (z.isDirectory && !isExistObject) {
+          fs.mkdirSync(fullPath, { recursive: true });
+        }
+        if (!z.isDirectory) {
+          const zipFile = z.getData().toString('utf-8');
+          if (!isExistObject) {
+            fs.writeFileSync(fullPath, zipFile, { recursive: true });
+            resolve();
+          } else {
+            const file = fs.readFileSync(fullPath).toString('utf-8');
+            updateExistFile(file, zipFile)
+              .then((newFile) => {
+                fs.writeFile(fullPath, newFile, ((err) => {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    resolve();
+                  }
+                }));
+              })
+              .catch((e) => reject(e));
+          }
+        }
+      });
+      if (isDirectory) {
         resolve();
-      } else {
-        const file = fs.readFileSync(fullPath).toString('utf-8');
-        updateExistFile(file, zipFile)
-          .then((newFile) => {
-            fs.writeFile(fullPath, newFile, ((err) => {
-              if (err) {
-                reject(err);
-              } else {
-                resolve();
-              }
-            }));
-          })
-          .catch((e) => reject(e));
       }
     } catch (e) {
       reject(e);
@@ -336,8 +355,12 @@ function getInstallationURL(sfdxProject, packageName) {
 function callUpdateInfo(resBody, domain, sessionId, log) {
   return new Promise((resolve, reject) => {
     try {
-      log.log('Start call update info');
+      let logText = '';
+      log.logs.forEach((log) => {
+        logText += `${log}\n`;
+      });
       resBody.logs = log.logs;
+      log.log('Start Call Update Info');
       const headers = {
         Authorization: `OAuth ${sessionId}`,
         // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQNm5dR52eF5TqkPYRQ7XtAdeo96i_yiUHIIfTKfZLMffzRwkJ7YcFZaaHX0Ap_Fkh6QjbqAkW9HZw0I4bKEzxFXQemuf',
@@ -348,9 +371,8 @@ function callUpdateInfo(resBody, domain, sessionId, log) {
 
       const body = { methodType: constants.METHOD_TYPE_UPDATE_INFO, body: JSON.stringify(resBody) };
       axios.post(url, body, { headers }).then((response) => {
-        log.log('response');
-        resolve(response);
         log.log('End Call Update Info');
+        resolve(response);
       }).catch((e) => {
         log.log(`Error Call Update Info\n${e}`);
         reject(e);

@@ -1,4 +1,3 @@
-const fs = require('fs');
 const helper = require('./helper');
 const constants = require('../../../constants');
 
@@ -33,7 +32,6 @@ function createUnlockedPackage(body, log) {
   };
   return new Promise((resolve, reject) => {
     const projectName = `${body.orgId}_${body.userId}_${body.timestamp}`;
-    log.log('Start Create Unlocked Package');
     Promise.resolve()
       .then(() => helper.checkProjectDirectory(projectName)
         .then((isExist) => {
@@ -44,7 +42,7 @@ function createUnlockedPackage(body, log) {
           }
         }))
       .then(() => helper.setInstanceUrl(projectName, body.domain))
-      .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), log))
+      .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), body.componentList.length, log))
       .then((result) => helper.convertToBuffer(result, log))
       .then((bufferList) => helper.unzipComponentList(bufferList, projectName, log))
       .then(() => helper.generatePackageXML(body.componentList, projectName, log))
@@ -65,20 +63,33 @@ function createUnlockedPackage(body, log) {
       .then((sfdxProject) => {
         resBody.sfdxProject = JSON.stringify(sfdxProject);
         resBody.status = 'Completed';
-        return helper.getInstallationURL(sfdxProject, body.packageName);
+        if (sfdxProject.packageAliases) {
+          return helper.getInstallationURL(sfdxProject, body.packageName);
+        }
+        return Promise.resolve('');
       })
       .then((installationURL) => {
         resBody.installationURL = installationURL;
         return Promise.resolve();
       })
-      .then(() => helper.callUpdateInfo(resBody, body.domain, body.sessionId, log))
+      .then(() => {
+        log.log('End Create Unlocked Package');
+        helper.callUpdateInfo(resBody, body.domain, body.sessionId, log);
+      })
       .then((r) => resolve(r))
       .then(() => helper.removeProject(projectName, log))
       .catch((e) => {
-        const error = typeof e === 'string' ? e : JSON.stringify(e);
+        let error = 'Error';
+        if (e) {
+          error = e.toString();
+        }
         resBody.status = 'Error';
         resBody.error = error;
-        return helper.callUpdateInfo(resBody, body.domain, body.sessionId, log).then(() => reject(e));
+        log.log('Error Create Unlocked Package');
+        log.log(error);
+        return helper.callUpdateInfo(resBody, body.domain, body.sessionId, log)
+          .then(() => reject(e))
+          .catch((e1) => reject(e1));
       })
       .then(() => helper.removeProject(projectName, log));
   });
