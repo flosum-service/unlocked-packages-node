@@ -16,8 +16,10 @@ const PACKAGE_NAME_MUST_BE_UNIQUE = 'The package name must be unique for the nam
 const PACKAGE_WITH_THIS_NAME_IS_EXIST = 'The package with current name is exist.';
 const PROJECT_DIRECTORY_IS_EXIST = 'A project with these parameters already exists.';
 const PACKAGE_INSTALLATION_URL_NOT_FOUND = 'Package installation URL not found.';
+const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
+const SOURCE_OBJECT_BRANCH = 'Component__c';
 
-const CREATE_PACKAGE_REQUIRED_FIELDS = ['domain', 'tempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'userId', 'componentList', 'timestamp', 'packageName', 'versionName', 'username', 'versionKey'];
+const CREATE_PACKAGE_REQUIRED_FIELDS = ['domain', 'tempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'userId', 'componentList', 'timestamp', 'packageName', 'versionName', 'username', 'versionKey', 'sourceObjectName'];
 
 function getSFDXCreateProject(projectName) {
   return `sfdx force:project:create -n ${projectName}`;
@@ -58,6 +60,8 @@ module.exports = {
   PACKAGE_WITH_THIS_NAME_IS_EXIST,
   PROJECT_DIRECTORY_IS_EXIST,
   PACKAGE_INSTALLATION_URL_NOT_FOUND,
+  SOURCE_OBJECT_BRANCH,
+  SOURCE_OBJECT_DEPLOYMENT,
   getSFDXCreateProject,
   getSFDXConvertMetadata,
   getSFDXCreateUnlockedPackage,

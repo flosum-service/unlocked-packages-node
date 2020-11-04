@@ -131,9 +131,10 @@ function b64toBuffer(b64Data, log) {
   });
 }
 
-function setInstanceUrl(projectName, domain) {
+function setInstanceUrl(projectName, domain, log) {
   return new Promise((resolve, reject) => {
     try {
+      log.log('Start Set Instance Url');
       const dir = `./${projectName}/.sfdx`;
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
@@ -141,11 +142,14 @@ function setInstanceUrl(projectName, domain) {
       const sfdxConfig = `{ "instanceUrl": "https://${domain}" }`;
       fs.writeFile(`${dir}/sfdx-config.json`, sfdxConfig, ((err) => {
         if (err) {
+          log.log(`Error Set Instance Url\n${err}`);
           reject(err);
         }
+        log.log('End Set Instance Url');
         resolve();
       }));
     } catch (e) {
+      log.log(`Error Set Instance Url\n${e}`);
       reject(e);
     }
   });
@@ -230,7 +234,39 @@ function convertToBuffer(componentsWithAttachmentList, log) {
   });
 }
 
-function unzipBuffer(buf, i, projectName, log) {
+function unzipBufferBranch(buf, i, projectName, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      const zip = new AdmZip(buf);
+      const zipEntries = zip.getEntries();
+      const projectDataPath = `${projectName}/${constants.UNZIP_CATALOG_NAME}`;
+      const fullPath = `${projectDataPath}/${zipEntries[0].entryName}`;
+      const zipFile = zipEntries[0].getData().toString('utf-8');
+      const isExistObject = fs.existsSync(fullPath);
+      if (!isExistObject) {
+        zip.extractAllTo(projectDataPath, false);
+        resolve();
+      } else {
+        const file = fs.readFileSync(fullPath).toString('utf-8');
+        updateExistFile(file, zipFile)
+          .then((newFile) => {
+            fs.writeFile(fullPath, newFile, ((err) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve();
+              }
+            }));
+          })
+          .catch((e) => reject(e));
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function unzipBufferDeployment(buf, i, projectName, log) {
   return new Promise((resolve, reject) => {
     try {
       const zip = new AdmZip(buf);
@@ -244,6 +280,7 @@ function unzipBuffer(buf, i, projectName, log) {
         }
         fullPath = `${projectDataPath}/${z.entryName}`;
         const isExistObject = fs.existsSync(fullPath);
+
         if (z.isDirectory && !isExistObject) {
           fs.mkdirSync(fullPath, { recursive: true });
         }
@@ -277,15 +314,20 @@ function unzipBuffer(buf, i, projectName, log) {
   });
 }
 
-function unzipComponentList(bufferList, projectName, log) {
+function unzipComponentList(bufferList, projectName, sourceObjectName, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Unzip Component List');
       const attachmentList = [];
       let b64ToBlobPromiseChain = Promise.resolve();
       bufferList.forEach((buffer, i) => {
-        b64ToBlobPromiseChain = b64ToBlobPromiseChain
-          .then(() => unzipBuffer(buffer, i, projectName, log));
+        if (sourceObjectName === constants.SOURCE_OBJECT_DEPLOYMENT) {
+          b64ToBlobPromiseChain = b64ToBlobPromiseChain
+            .then(() => unzipBufferDeployment(buffer, i, projectName, sourceObjectName, log));
+        } else {
+          b64ToBlobPromiseChain = b64ToBlobPromiseChain
+            .then(() => unzipBufferBranch(buffer, i, projectName, sourceObjectName, log));
+        }
       });
       b64ToBlobPromiseChain
         .then(() => {
@@ -321,32 +363,41 @@ function removeProject(projectName, log) {
   });
 }
 
-function getSFDXProject(projectName) {
+function getSFDXProject(projectName, log) {
   return new Promise((resolve, reject) => {
     try {
+      log.log('Start Get SFDX Project');
       fs.readFile(`${projectName}/sfdx-project.json`, (e, data) => {
         if (e) {
+          log.log(`Error Get SFDX Project\n${e}`);
           reject(e);
         }
         const sfdxProject = JSON.parse(data.toString('utf-8'));
+        log.log('End Get SFDX Project');
         resolve(sfdxProject);
       });
     } catch (e) {
+      log.log(`Error Get SFDX Project\n${e}`);
       reject(e);
     }
   });
 }
 
-function getInstallationURL(sfdxProject, packageName) {
+function getInstallationURL(sfdxProject, packageName, log) {
   return new Promise((resolve, reject) => {
     try {
+      log.log('Start Get Installation URL');
       Object.keys(sfdxProject.packageAliases).forEach((f) => {
         if (f.includes(`${packageName}@`)) {
-          resolve(`https://login.salesforce.com/packaging/installPackage.apexp?p0=${sfdxProject.packageAliases[f]}`);
+          const url = `https://login.salesforce.com/packaging/installPackage.apexp?p0=${sfdxProject.packageAliases[f]}`;
+          resolve(url);
+          log.log(`End Get Installation URL\n${url}`);
         }
       });
       reject();
+      log.log('End Get Installation URL None URL');
     } catch (e) {
+      log.log(`Error Get SFDX Project\n${e}`);
       reject(e);
     }
   });
@@ -357,9 +408,10 @@ function callUpdateInfo(resBody, domain, sessionId, log) {
     try {
       let logText = '';
       log.logs.forEach((log) => {
-        logText += `${log}\n`;
+        logText += `${log}
+        \n`;
       });
-      resBody.logs = log.logs;
+      resBody.logs = logText;
       log.log('Start Call Update Info');
       const headers = {
         Authorization: `OAuth ${sessionId}`,

@@ -41,10 +41,10 @@ function createUnlockedPackage(body, log) {
             return helper.callChildProcess(constants.getSFDXCreateProject(projectName), log);
           }
         }))
-      .then(() => helper.setInstanceUrl(projectName, body.domain))
+      .then(() => helper.setInstanceUrl(projectName, body.domain, log))
       .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), body.componentList.length, log))
       .then((result) => helper.convertToBuffer(result, log))
-      .then((bufferList) => helper.unzipComponentList(bufferList, projectName, log))
+      .then((bufferList) => helper.unzipComponentList(bufferList, projectName, body.sourceObjectName, log))
       .then(() => helper.generatePackageXML(body.componentList, projectName, log))
       .then(() => helper.callChildProcess(
         constants.getSFDXConvertMetadata(`./${constants.UNZIP_CATALOG_NAME}`),
@@ -59,12 +59,12 @@ function createUnlockedPackage(body, log) {
         log.log('Test Mode');
         return Promise.resolve();
       })
-      .then(() => helper.getSFDXProject(projectName))
+      .then(() => helper.getSFDXProject(projectName, log))
       .then((sfdxProject) => {
         resBody.sfdxProject = JSON.stringify(sfdxProject);
         resBody.status = 'Completed';
         if (sfdxProject.packageAliases) {
-          return helper.getInstallationURL(sfdxProject, body.packageName);
+          return helper.getInstallationURL(sfdxProject, body.packageName, log);
         }
         return Promise.resolve('');
       })
@@ -74,7 +74,9 @@ function createUnlockedPackage(body, log) {
       })
       .then(() => {
         log.log('End Create Unlocked Package');
-        helper.callUpdateInfo(resBody, body.domain, body.sessionId, log);
+        helper.callUpdateInfo(resBody, body.domain, body.sessionId, log)
+          .then(() => resolve())
+          .catch((e) => reject(e));
       })
       .then((r) => resolve(r))
       .then(() => helper.removeProject(projectName, log))
