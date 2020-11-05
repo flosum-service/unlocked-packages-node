@@ -161,19 +161,42 @@ function updateExistFile(existFile, zipFile) {
       let currentObject = convert.xml2js(existFile);
 
       if (currentObject.elements && currentObject.elements.length) {
-        if (currentObject.elements[0].elements && currentObject.elements[0].elements.length) {
-          let zipObject = convert.xml2js(zipFile);
+        if (!currentObject.elements[0].elements) {
+          currentObject.elements[0].elements = [];
+        }
+        let zipObject = convert.xml2js(zipFile);
+        if (zipObject.elements && zipObject.elements.length) {
+          zipObject = zipObject.elements[0];
           if (zipObject.elements && zipObject.elements.length) {
-            zipObject = zipObject.elements[0];
-            if (zipObject.elements && zipObject.elements.length) {
-              currentObject.elements[0].elements.push(...zipObject.elements);
-            }
+            currentObject.elements[0].elements.push(...zipObject.elements);
           }
         }
       }
       currentObject = convert.js2xml(currentObject);
       resolve(currentObject);
     } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function mergeAttachmentAndComponents(componentList, attachmentList, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      const mergedComponentList = [];
+      log.log('Start Merge Attachment And Components');
+      componentList.forEach((comp) => {
+        attachmentList.forEach((at) => {
+          if (at.id === comp.id) {
+            const merged = Object.assign(at, comp);
+            mergedComponentList.push(merged);
+          }
+        });
+      });
+      resolve(mergedComponentList);
+      log.log('End Merge Attachment And Components');
+    } catch (e) {
+      log.log(`Error Merge Attachment And Components\n${e}`);
       reject(e);
     }
   });
@@ -212,17 +235,19 @@ function convertToBuffer(componentsWithAttachmentList, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Convert To Buffer');
-      const attachmentList = [];
       let b64ToBlobPromiseChain = Promise.resolve();
       componentsWithAttachmentList.forEach((comp, i) => {
         b64ToBlobPromiseChain = b64ToBlobPromiseChain
           .then(() => b64toBuffer(comp.body, log))
-          .then((buffer) => attachmentList.push(buffer));
+          .then((buffer) => {
+            comp.body = buffer;
+            return Promise.resolve();
+          });
       });
       b64ToBlobPromiseChain
         .then(() => {
           log.log('End Convert To Buffer');
-          resolve(attachmentList);
+          resolve(componentsWithAttachmentList);
         }).catch((e) => {
           log.log(`Error Convert To Buffer\n${e}`);
           reject(e);
@@ -234,18 +259,63 @@ function convertToBuffer(componentsWithAttachmentList, log) {
   });
 }
 
-function unzipBufferBranch(buf, i, projectName, log) {
+function removeFieldsFromObject(fullPath, log) {
   return new Promise((resolve, reject) => {
     try {
-      const zip = new AdmZip(buf);
+      log.log('Start Remove Fields From Project');
+      const file = fs.readFileSync(fullPath).toString('utf-8');
+      const currentObject = convert.xml2js(file);
+
+      if (currentObject.elements && currentObject.elements.length) {
+        if (currentObject.elements[0].elements && currentObject.elements[0].elements.length) {
+          currentObject.elements[0].elements = currentObject.elements[0].elements.filter((e) => e.name !== 'fields');
+          fs.writeFile(fullPath, convert.js2xml(currentObject), (err) => {
+            if (err) {
+              log.log(`Error Remove Fields From Project\n${err}`);
+              reject(err);
+            }
+            log.log('End Remove Fields From Project, Removed');
+            resolve();
+          });
+        } else {
+          log.log('End Remove Fields From Project, Not Fields');
+          resolve();
+        }
+      } else {
+        log.log('End Remove Fields From Project, Not Fields');
+        resolve();
+      }
+    } catch (e) {
+      log.log(`Error Remove Fields From Project\n${e}`);
+      reject(e);
+    }
+  });
+}
+
+function unzipBufferBranch(comp, i, projectName, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      const zip = new AdmZip(comp.body);
       const zipEntries = zip.getEntries();
       const projectDataPath = `${projectName}/${constants.UNZIP_CATALOG_NAME}`;
-      const fullPath = `${projectDataPath}/${zipEntries[0].entryName}`;
-      const zipFile = zipEntries[0].getData().toString('utf-8');
+      let fullPath = projectDataPath;
+      let zipFile = '';
+      const isEnd = false;
+      zipEntries.forEach((z) => {
+        if (!z.isDirectory && !isEnd) {
+          fullPath = `${fullPath}/${z.entryName}`;
+          zipFile = z.getData().toString('utf-8');
+        }
+      });
       const isExistObject = fs.existsSync(fullPath);
       if (!isExistObject) {
         zip.extractAllTo(projectDataPath, false);
-        resolve();
+        if (comp.type === 'CustomObject') {
+          removeFieldsFromObject(fullPath, log)
+            .then(() => resolve());
+        } else {
+          resolve();
+        }
       } else {
         const file = fs.readFileSync(fullPath).toString('utf-8');
         updateExistFile(file, zipFile)
@@ -266,68 +336,15 @@ function unzipBufferBranch(buf, i, projectName, log) {
   });
 }
 
-function unzipBufferDeployment(buf, i, projectName, log) {
-  return new Promise((resolve, reject) => {
-    try {
-      const zip = new AdmZip(buf);
-      const zipEntries = zip.getEntries();
-      const projectDataPath = `${projectName}/${constants.UNZIP_CATALOG_NAME}`;
-      let fullPath = `${projectDataPath}/`;
-      let isDirectory = true;
-      zipEntries.forEach((z) => {
-        if (isDirectory) {
-          isDirectory = z.isDirectory;
-        }
-        fullPath = `${projectDataPath}/${z.entryName}`;
-        const isExistObject = fs.existsSync(fullPath);
-
-        if (z.isDirectory && !isExistObject) {
-          fs.mkdirSync(fullPath, { recursive: true });
-        }
-        if (!z.isDirectory) {
-          const zipFile = z.getData().toString('utf-8');
-          if (!isExistObject) {
-            fs.writeFileSync(fullPath, zipFile, { recursive: true });
-            resolve();
-          } else {
-            const file = fs.readFileSync(fullPath).toString('utf-8');
-            updateExistFile(file, zipFile)
-              .then((newFile) => {
-                fs.writeFile(fullPath, newFile, ((err) => {
-                  if (err) {
-                    reject(err);
-                  } else {
-                    resolve();
-                  }
-                }));
-              })
-              .catch((e) => reject(e));
-          }
-        }
-      });
-      if (isDirectory) {
-        resolve();
-      }
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
-function unzipComponentList(bufferList, projectName, sourceObjectName, log) {
+function unzipComponentList(componentList, projectName, sourceObjectName, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Unzip Component List');
       const attachmentList = [];
       let b64ToBlobPromiseChain = Promise.resolve();
-      bufferList.forEach((buffer, i) => {
-        if (sourceObjectName === constants.SOURCE_OBJECT_DEPLOYMENT) {
-          b64ToBlobPromiseChain = b64ToBlobPromiseChain
-            .then(() => unzipBufferDeployment(buffer, i, projectName, sourceObjectName, log));
-        } else {
-          b64ToBlobPromiseChain = b64ToBlobPromiseChain
-            .then(() => unzipBufferBranch(buffer, i, projectName, sourceObjectName, log));
-        }
+      componentList.forEach((comp, i) => {
+        b64ToBlobPromiseChain = b64ToBlobPromiseChain
+          .then(() => unzipBufferBranch(comp, i, projectName, log));
       });
       b64ToBlobPromiseChain
         .then(() => {
@@ -408,8 +425,8 @@ function callUpdateInfo(resBody, domain, sessionId, log) {
     try {
       let logText = '';
       log.logs.forEach((log) => {
-        logText += `${log}
-        \n`;
+        logText += `${log}\n
+        `;
       });
       resBody.logs = logText;
       log.log('Start Call Update Info');
@@ -447,5 +464,6 @@ module.exports = {
   getInstallationURL,
   removeProject,
   addExistProjectToSFDXProject,
+  mergeAttachmentAndComponents,
   callUpdateInfo,
 };

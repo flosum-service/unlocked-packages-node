@@ -7,10 +7,10 @@ const utils = require('../../../services/utils');
 const router = new Router();
 
 router.post('/', (req, res) => {
-  const log = logger.createLog(`unpack:create:${req.headers['x-request-id']}`);
-  log.log(constants.START_CREATE_UNLOCKED_PACKAGE);
+  const log = logger.createLog(`unpack:update:${req.headers['x-request-id']}`);
+  log.log(constants.START_UPDATE_UNLOCKED_PACKAGE);
 
-  const fields = utils.checkRequiredFields(req.body, constants.CREATE_PACKAGE_REQUIRED_FIELDS);
+  const fields = utils.checkRequiredFields(req.body, constants.UPDATE_PACKAGE_REQUIRED_FIELDS);
   if (fields.length) {
     log.log(constants.REQUIRED_FIELDS_ERROR);
     const body = {

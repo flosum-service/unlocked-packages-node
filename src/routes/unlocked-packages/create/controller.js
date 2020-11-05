@@ -43,8 +43,9 @@ function createUnlockedPackage(body, log) {
         }))
       .then(() => helper.setInstanceUrl(projectName, body.domain, log))
       .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), body.componentList.length, log))
+      .then((result) => helper.mergeAttachmentAndComponents(body.componentList, result, log))
       .then((result) => helper.convertToBuffer(result, log))
-      .then((bufferList) => helper.unzipComponentList(bufferList, projectName, body.sourceObjectName, log))
+      .then((componentList) => helper.unzipComponentList(componentList, projectName, body.sourceObjectName, log))
       .then(() => helper.generatePackageXML(body.componentList, projectName, log))
       .then(() => helper.callChildProcess(
         constants.getSFDXConvertMetadata(`./${constants.UNZIP_CATALOG_NAME}`),
@@ -89,6 +90,7 @@ function createUnlockedPackage(body, log) {
         resBody.error = error;
         log.log('Error Create Unlocked Package');
         log.log(error);
+        return Promise.resolve();
         return helper.callUpdateInfo(resBody, body.domain, body.sessionId, log)
           .then(() => reject(e))
           .catch((e1) => reject(e1));
@@ -97,20 +99,6 @@ function createUnlockedPackage(body, log) {
   });
 }
 
-function checkRequiredFields(body) {
-  if (!body) {
-    return constants.CREATE_PACKAGE_REQUIRED_FIELDS;
-  }
-  const missingRequiredFieldList = [];
-  constants.CREATE_PACKAGE_REQUIRED_FIELDS.forEach((field) => {
-    if (!body[field]) {
-      missingRequiredFieldList.push(field);
-    }
-  });
-  return missingRequiredFieldList;
-}
-
 module.exports = {
   createUnlockedPackage,
-  checkRequiredFields,
 };

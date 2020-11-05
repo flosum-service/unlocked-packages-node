@@ -10,6 +10,7 @@ const DOMAIN_ID_NOT_PROVIDED = 'Domain Id not provided.';
 const COMPONENT_LENGTH_WRONG = 'There must be at least one component.';
 const DEV_NODE_ENV = 'development';
 const START_CREATE_UNLOCKED_PACKAGE = 'Start Create Unlocked Package';
+const START_UPDATE_UNLOCKED_PACKAGE = 'Start Update Unlocked Package';
 const ATTACHMENTS_DELETED = 'The definition of some of these components may have been removed.';
 const UNZIP_CATALOG_NAME = 'project_data';
 const PACKAGE_NAME_MUST_BE_UNIQUE = 'The package name must be unique for the namespace.';
@@ -20,6 +21,7 @@ const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
 const SOURCE_OBJECT_BRANCH = 'Component__c';
 
 const CREATE_PACKAGE_REQUIRED_FIELDS = ['domain', 'tempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'userId', 'componentList', 'timestamp', 'packageName', 'versionName', 'username', 'versionKey', 'sourceObjectName'];
+const UPDATE_PACKAGE_REQUIRED_FIELDS = ['domain', 'tempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'userId', 'componentList', 'timestamp', 'packageName', 'unlockedPackageId', 'versionName', 'username', 'versionKey', 'sourceObjectName'];
 
 function getSFDXCreateProject(projectName) {
   return `sfdx force:project:create -n ${projectName}`;
@@ -52,9 +54,11 @@ module.exports = {
   COMPONENT_LENGTH_WRONG,
   DEV_NODE_ENV,
   START_CREATE_UNLOCKED_PACKAGE,
+  START_UPDATE_UNLOCKED_PACKAGE,
   ATTACHMENTS_DELETED,
   UNZIP_CATALOG_NAME,
   CREATE_PACKAGE_REQUIRED_FIELDS,
+  UPDATE_PACKAGE_REQUIRED_FIELDS,
   REQUIRED_FIELDS_ERROR,
   PACKAGE_NAME_MUST_BE_UNIQUE,
   PACKAGE_WITH_THIS_NAME_IS_EXIST,

@@ -249,6 +249,19 @@ function compareVersions(version1, version2) {
   return result;
 }
 
+function checkRequiredFields(body, requiredFields) {
+  if (!body) {
+    return constants.CREATE_PACKAGE_REQUIRED_FIELDS;
+  }
+  const missingRequiredFieldList = [];
+  requiredFields.forEach((field) => {
+    if (!body[field]) {
+      missingRequiredFieldList.push(field);
+    }
+  });
+  return missingRequiredFieldList;
+}
+
 module.exports = {
   encodeBase64,
   decodeBase64,
@@ -264,4 +277,5 @@ module.exports = {
   removeSensitiveData,
   deleteSensitiveFields,
   compareVersions,
+  checkRequiredFields,
 };
