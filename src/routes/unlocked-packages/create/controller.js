@@ -90,7 +90,6 @@ function createUnlockedPackage(body, log) {
         resBody.error = error;
         log.log('Error Create Unlocked Package');
         log.log(error);
-        return Promise.resolve();
         return helper.callUpdateInfo(resBody, body.domain, body.sessionId, log)
           .then(() => reject(e))
           .catch((e1) => reject(e1));
