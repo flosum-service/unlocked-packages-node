@@ -23,20 +23,6 @@ router.post('/', (req, res) => {
     log.log(body);
     return res.status(400).send(body);
   }
-
-  if (!req.body || !req.body.componentList || !req.body.componentList.length) {
-    log.log(constants.COMPONENT_LENGTH_WRONG);
-    const body = {
-      status: constants.ERROR,
-      error: {
-        message: constants.COMPONENT_LENGTH_WRONG,
-      },
-    };
-    log.log(body);
-    return res.status(400).send(body);
-  }
-
-  log.log('The process of creating an unlocked package has already begun.');
   controller.createUnlockedPackage(req.body, log)
     .then(() => log.log('Completed'))
     .catch((e) => log.log(`Error\n${e}`));

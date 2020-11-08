@@ -1,7 +1,8 @@
 const SUCCESS = 'Success';
 const ERROR = 'Error';
 const METHOD_TYPE_GET_ATTACHMENTS = 'ATTACHMENT';
-const METHOD_TYPE_UPDATE_INFO = 'UPDATE INFO';
+const METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO = 'UPDATE PACKAGE VERSION INFO';
+const METHOD_TYPE_UPDATE_PACKAGE_INFO = 'UPDATE PACKAGE INFO';
 const STATUS_400_INVALID_JSON_ERROR = 'STATUS 400: Invalid JSON format.';
 const STATUS_404_ENDPOINT_NOT_FOUND = 'STATUS 404: Endpoint doesn\'t exist.';
 const STATUS_500_INTERNAL_SERVER_ERROR = 'STATUS 500: Internal server error';
@@ -20,8 +21,8 @@ const PACKAGE_INSTALLATION_URL_NOT_FOUND = 'Package installation URL not found.'
 const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
 const SOURCE_OBJECT_BRANCH = 'Component__c';
 
-const CREATE_PACKAGE_REQUIRED_FIELDS = ['domain', 'tempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'userId', 'componentList', 'timestamp', 'packageName', 'versionName', 'username', 'versionKey', 'sourceObjectName'];
-const UPDATE_PACKAGE_REQUIRED_FIELDS = ['domain', 'tempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'userId', 'componentList', 'timestamp', 'packageName', 'unlockedPackageId', 'versionName', 'username', 'versionKey', 'sourceObjectName'];
+const CREATE_PACKAGE_REQUIRED_FIELDS = ['username', 'userId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
+const CREATE_PACKAGE_VERSION_REQUIRED_FIELDS = ['versionName', 'versionKey', 'componentList', 'username', 'userId', 'unlockedPackageVersionId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sfdxProject', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 
 function getSFDXCreateProject(projectName) {
   return `sfdx force:project:create -n ${projectName}`;
@@ -46,7 +47,8 @@ module.exports = {
   SUCCESS,
   ERROR,
   METHOD_TYPE_GET_ATTACHMENTS,
-  METHOD_TYPE_UPDATE_INFO,
+  METHOD_TYPE_UPDATE_PACKAGE_INFO,
+  METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO,
   STATUS_400_INVALID_JSON_ERROR,
   STATUS_404_ENDPOINT_NOT_FOUND,
   STATUS_500_INTERNAL_SERVER_ERROR,
@@ -58,7 +60,7 @@ module.exports = {
   ATTACHMENTS_DELETED,
   UNZIP_CATALOG_NAME,
   CREATE_PACKAGE_REQUIRED_FIELDS,
-  UPDATE_PACKAGE_REQUIRED_FIELDS,
+  CREATE_PACKAGE_VERSION_REQUIRED_FIELDS,
   REQUIRED_FIELDS_ERROR,
   PACKAGE_NAME_MUST_BE_UNIQUE,
   PACKAGE_WITH_THIS_NAME_IS_EXIST,

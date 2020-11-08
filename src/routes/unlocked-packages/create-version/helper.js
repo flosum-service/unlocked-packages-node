@@ -83,12 +83,12 @@ function callComponentList(domain, sessionId, attachmentIdList, attachmentsCount
   return new Promise((resolve, reject) => {
     try {
       const headers = {
-        // Authorization: `OAuth ${sessionId}`,
-        Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
+        Authorization: `OAuth ${sessionId}`,
+        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
         'Content-Type': 'application/json',
       };
-      const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      // const url = `https://${domain}/services/apexrest/unlocked-packages`;
+      // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
+      const url = `https://${domain}/services/apexrest/unlocked-packages`;
       const body = { methodType: constants.METHOD_TYPE_GET_ATTACHMENTS, body: JSON.stringify(attachmentIdList) };
       axios.post(url, body, { headers }).then((response) => {
         let { data } = response;
@@ -140,7 +140,6 @@ function setInstanceUrl(projectName, domain, log) {
         fs.mkdirSync(dir);
       }
       const sfdxConfig = `{ "instanceUrl": "https://${domain}" }`;
-      log.log(`Instance Url: https://${domain}`);
       fs.writeFile(`${dir}/sfdx-config.json`, sfdxConfig, ((err) => {
         if (err) {
           log.log(`Error Set Instance Url\n${err}`);
@@ -151,6 +150,25 @@ function setInstanceUrl(projectName, domain, log) {
       }));
     } catch (e) {
       log.log(`Error Set Instance Url\n${e}`);
+      reject(e);
+    }
+  });
+}
+
+function addSFDXPackage(projectName, sfdxProject, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start Add SFDX Package');
+      fs.writeFile(`${projectName}/sfdx-project.json`, sfdxProject, ((err) => {
+        if (err) {
+          log.log(`Error Add SFDX Package\n${err}`);
+          reject(err);
+        }
+        log.log('End Add SFDX Package');
+        resolve();
+      }));
+    } catch (e) {
+      log.log(`Error Add SFDX Package\n${e}`);
       reject(e);
     }
   });
@@ -366,15 +384,14 @@ function removeProject(projectName, log) {
   return new Promise((resolve, reject) => {
     log.log('Start Remove Project');
     try {
-      // fs.rmdir(`./${projectName}`, { recursive: true }, (e) => {
-      //   if (e) {
-      //     log.log(`Error Remove Project${e}`);
-      //     reject(e);
-      //   }
-      //   log.log('End Remove Project');
-      //   resolve();
-      // });
-      resolve();
+      fs.rmdir(`./${projectName}`, { recursive: true }, (e) => {
+        if (e) {
+          log.log(`Error Remove Project${e}`);
+          reject(e);
+        }
+        log.log('End Remove Project');
+        resolve();
+      });
     } catch (e) {
       log.log(`Error Remove Project${e}`);
       reject(e);
@@ -435,7 +452,7 @@ function callSetPackageInfo(resBody, sessionId, domain, log) {
       // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
       const url = `https://${domain}/services/apexrest/unlocked-packages`;
 
-      const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_INFO, body: JSON.stringify(resBody) };
+      const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO, body: JSON.stringify(resBody) };
       axios.post(url, body, { headers }).then((response) => {
         log.log('End Call Set Package Info');
         resolve(response);
@@ -461,13 +478,13 @@ function callUpdateInfo(resBody, domain, sessionId, log) {
       resBody.logs = logText;
       log.log('Start Call Update Info');
       const headers = {
-        // Authorization: `OAuth ${sessionId}`,
-        Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
+        Authorization: `OAuth ${sessionId}`,
+        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
         'Content-Type': 'application/json',
       };
-      const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      // const url = `https://${domain}/services/apexrest/unlocked-packages`;
-      const body = { methodType: constants.METHOD_TYPE_UPDATE_INFO, body: JSON.stringify(resBody) };
+      // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
+      const url = `https://${domain}/services/apexrest/unlocked-packages`;
+      const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO, body: JSON.stringify(resBody) };
       axios.post(url, body, { headers }).then((response) => {
         log.log('End Call Update Info');
         resolve(response);
@@ -496,4 +513,5 @@ module.exports = {
   mergeAttachmentAndComponents,
   callUpdateInfo,
   callSetPackageInfo,
+  addSFDXPackage,
 };
