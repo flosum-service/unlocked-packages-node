@@ -45,7 +45,7 @@ function createUnlockedPackage(body, log) {
             resBody.tempLogId = body.unlockedPackageTempLogId;
             resBody.logs = JSON.stringify(log.logs);
             resBody.status = 'Completed';
-            return helper.callSetPackageInfo(resBody, body.sessionId, body.domain, log);
+            return helper.callSetPackageInfo(resBody, body.sessionId, body.domain, body.namespacePrefix, log);
           });
       })
       .then(() => helper.removeProject(projectName, log))
@@ -53,7 +53,7 @@ function createUnlockedPackage(body, log) {
         resBody.logs = JSON.stringify(log.logs);
         resBody.status = 'Error';
         resBody.error = e.toString();
-        helper.callSetPackageInfo(resBody, body.sessionId, body.domain, log)
+        helper.callSetPackageInfo(resBody, body.sessionId, body.domain, body.namespacePrefix, log)
           .then(() => resolve())
           .catch((e) => reject(e));
       })

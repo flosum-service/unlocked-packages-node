@@ -78,7 +78,7 @@ function generatePackageXML(componentList, projectName, log) {
   });
 }
 
-function callComponentList(domain, sessionId, attachmentIdList, attachmentsCount, log, componentsWithAttachmentList = []) {
+function callComponentList(domain, sessionId, attachmentIdList, attachmentsCount, namespacePrefix, log, componentsWithAttachmentList = []) {
   log.log('Start Call Component List');
   return new Promise((resolve, reject) => {
     try {
@@ -88,7 +88,8 @@ function callComponentList(domain, sessionId, attachmentIdList, attachmentsCount
         'Content-Type': 'application/json',
       };
       // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      const url = `https://${domain}/services/apexrest/unlocked-packages`;
+      const prefix = namespacePrefix ? `${namespacePrefix}/` : '';
+      const url = `https://${domain}/services/apexrest/${prefix}unlocked-packages`;
       const body = { methodType: constants.METHOD_TYPE_GET_ATTACHMENTS, body: JSON.stringify(attachmentIdList) };
       axios.post(url, body, { headers }).then((response) => {
         let { data } = response;
@@ -469,7 +470,7 @@ function callSetPackageInfo(resBody, sessionId, domain, log) {
   });
 }
 
-function callUpdateInfo(resBody, domain, sessionId, log) {
+function callUpdateInfo(resBody, domain, sessionId, namespacePrefix, log) {
   return new Promise((resolve, reject) => {
     try {
       let logText = '';
@@ -484,8 +485,9 @@ function callUpdateInfo(resBody, domain, sessionId, log) {
         // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
         'Content-Type': 'application/json',
       };
+      const prefix = namespacePrefix ? `${namespacePrefix}/` : '';
+      const url = `https://${domain}/services/apexrest/${prefix}unlocked-packages`;
       // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      const url = `https://${domain}/services/apexrest/unlocked-packages`;
       const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO, body: JSON.stringify(resBody) };
       axios.post(url, body, { headers }).then((response) => {
         log.log('End Call Update Info');

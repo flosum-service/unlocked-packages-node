@@ -23,7 +23,7 @@ function createUnlockedPackageVersion(body, log) {
           }
         }))
       .then(() => helper.setInstanceUrl(projectName, body.domain, log))
-      .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), body.componentList.length, log))
+      .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), body.componentList.length, body.namespacePrefix, log))
       .then((result) => helper.mergeAttachmentAndComponents(body.componentList, result, log))
       .then((result) => helper.convertToBuffer(result, log))
       .then((componentList) => helper.unzipComponentList(componentList, projectName, body.sourceObjectName, log))
@@ -62,7 +62,7 @@ function createUnlockedPackageVersion(body, log) {
       .then(() => {
         log.log('End Create Unlocked Package Version');
         resBody.logs = JSON.stringify(log.logs);
-        helper.callUpdateInfo(resBody, body.domain, body.sessionId, log)
+        helper.callUpdateInfo(resBody, body.domain, body.sessionId, body.namespacePrefix, log)
           .then(() => resolve())
           .catch((e) => reject(e));
       })
@@ -77,7 +77,7 @@ function createUnlockedPackageVersion(body, log) {
         resBody.error = error;
         log.log('Error Create Unlocked Package');
         log.log(error);
-        return helper.callUpdateInfo(resBody, body.domain, body.sessionId, log)
+        return helper.callUpdateInfo(resBody, body.domain, body.sessionId, body.namespacePrefix, log)
           .then(() => reject(e))
           .catch((e1) => reject(e1));
       })

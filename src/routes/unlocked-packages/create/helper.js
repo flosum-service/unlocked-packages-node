@@ -423,7 +423,7 @@ function getInstallationURL(sfdxProject, packageName, log) {
 }
 
 // function callSetPackageInfo(sfdxProject, packageName, unlockedPackageId, tempLogId, sessionId, domain, log) {
-function callSetPackageInfo(resBody, sessionId, domain, log) {
+function callSetPackageInfo(resBody, sessionId, domain, namespacePrefix, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Call Set Package Info');
@@ -433,7 +433,8 @@ function callSetPackageInfo(resBody, sessionId, domain, log) {
         'Content-Type': 'application/json',
       };
       // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      const url = `https://${domain}/services/apexrest/unlocked-packages`;
+      const prefix = namespacePrefix ? `${namespacePrefix}/` : '';
+      const url = `https://${domain}/services/apexrest/${prefix}unlocked-packages`;
 
       const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_INFO, body: JSON.stringify(resBody) };
       axios.post(url, body, { headers }).then((response) => {
