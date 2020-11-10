@@ -33,7 +33,7 @@ function createUnlockedPackage(body, log) {
           resBody.logs = JSON.stringify(log.logs);
           resBody.status = 'Error';
           resBody.error = constants.PACKAGE_WITH_THIS_NAME_IS_EXIST;
-          return helper.callSetPackageInfo(resBody, body.sessionId, body.domain, log);
+          return helper.callSetPackageInfo(resBody, body.sessionId, body.domain, body.namespacePrefix, log);
         }
         return helper.getSFDXProject(projectName, log)
           .then((sfdxProject) => {
