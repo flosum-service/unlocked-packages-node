@@ -419,12 +419,14 @@ function getSFDXProject(projectName, log) {
   });
 }
 
-function getInstallationURL(sfdxProject, packageName, log) {
+function getInstallationURL(sfdxProject, packageName, versionNumber, log) {
   return new Promise((resolve, reject) => {
     try {
+      const numbers = versionNumber.split('.');
+      const number = `${numbers[0]}.${numbers[1]}.${numbers[2]}`;
       log.log('Start Get Installation URL');
       Object.keys(sfdxProject.packageAliases).forEach((f) => {
-        if (f.includes(`${packageName}@`)) {
+        if (f.includes(`${packageName}@${number}`)) {
           const url = `https://login.salesforce.com/packaging/installPackage.apexp?p0=${sfdxProject.packageAliases[f]}`;
           resolve(url);
           log.log(`End Get Installation URL\n${url}`);

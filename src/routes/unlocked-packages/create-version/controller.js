@@ -51,7 +51,7 @@ function createUnlockedPackageVersion(body, log) {
         resBody.sfdxProject = JSON.stringify(sfdxProject);
         resBody.status = 'Completed';
         if (sfdxProject.packageAliases) {
-          return helper.getInstallationURL(sfdxProject, body.packageName, log);
+          return helper.getInstallationURL(sfdxProject, body.packageName, body.versionNumber, log);
         }
         return Promise.resolve('');
       })
