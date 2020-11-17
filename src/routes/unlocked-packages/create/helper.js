@@ -1,8 +1,8 @@
-const axios = require('axios');
 const fs = require('fs');
 const AdmZip = require('adm-zip');
 const convert = require('xml-js');
 const childProcess = require('child_process');
+const http = require('../../../services/http');
 const constants = require('../../../constants');
 
 function callChildProcess(command, log, options = {}, isCreateProject = false) {
@@ -21,6 +21,7 @@ function callChildProcess(command, log, options = {}, isCreateProject = false) {
           reject(e.message);
         } else {
           log.log(`End Call Child Process ${command}`);
+          log.log(stdout);
           resolve(stdout);
         }
       }));
@@ -73,47 +74,6 @@ function generatePackageXML(componentList, projectName, log) {
       }));
     } catch (e) {
       log.log(`Error Generate PackageXML${e}`);
-      reject(e);
-    }
-  });
-}
-
-function callComponentList(domain, sessionId, attachmentIdList, attachmentsCount, log, componentsWithAttachmentList = []) {
-  log.log('Start Call Component List');
-  return new Promise((resolve, reject) => {
-    try {
-      const headers = {
-        // Authorization: `OAuth ${sessionId}`,
-        Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
-        'Content-Type': 'application/json',
-      };
-      const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      // const url = `https://${domain}/services/apexrest/unlocked-packages`;
-      const body = { methodType: constants.METHOD_TYPE_GET_ATTACHMENTS, body: JSON.stringify(attachmentIdList) };
-      axios.post(url, body, { headers }).then((response) => {
-        let { data } = response;
-        data = JSON.parse(data);
-        log.log(`Component List Length, ${data.recordList.length}`);
-        componentsWithAttachmentList.push(...data.recordList);
-        if (data.idList && data.idList.length) {
-          callComponentList(domain, sessionId, data.idList, attachmentsCount, log, componentsWithAttachmentList)
-            .then((result) => resolve(result))
-            .catch((e) => {
-              reject(e);
-            });
-        } else if (componentsWithAttachmentList.length === attachmentsCount) {
-          log.log('End Call Component List');
-          resolve(componentsWithAttachmentList);
-        } else {
-          log.log('Error Call Component List');
-          reject(constants.ATTACHMENTS_DELETED);
-        }
-      }).catch((e) => {
-        log.log(`Error Call Component List\n${e}`);
-        reject(e);
-      });
-    } catch (e) {
-      log.log(`Error Call Component List\n${e}`);
       reject(e);
     }
   });
@@ -366,14 +326,14 @@ function removeProject(projectName, log) {
   return new Promise((resolve, reject) => {
     log.log('Start Remove Project');
     try {
-      // fs.rmdir(`./${projectName}`, { recursive: true }, (e) => {
-      //   if (e) {
-      //     log.log(`Error Remove Project${e}`);
-      //     reject(e);
-      //   }
-      //   log.log('End Remove Project');
-      //   resolve();
-      // });
+      fs.rmdir(`./${projectName}`, { recursive: true }, (e) => {
+        if (e) {
+          log.log(`Error Remove Project${e}`);
+          reject(e);
+        }
+        log.log('End Remove Project');
+        resolve();
+      });
       resolve();
     } catch (e) {
       log.log(`Error Remove Project${e}`);
@@ -422,22 +382,12 @@ function getInstallationURL(sfdxProject, packageName, log) {
   });
 }
 
-// function callSetPackageInfo(sfdxProject, packageName, unlockedPackageId, tempLogId, sessionId, domain, log) {
 function callSetPackageInfo(resBody, sessionId, domain, namespacePrefix, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Call Set Package Info');
-      const headers = {
-        Authorization: `OAuth ${sessionId}`,
-        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
-        'Content-Type': 'application/json',
-      };
-      // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      const prefix = namespacePrefix ? `${namespacePrefix}/` : '';
-      const url = `https://${domain}/services/apexrest/${prefix}unlocked-packages`;
-
       const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_INFO, body: JSON.stringify(resBody) };
-      axios.post(url, body, { headers }).then((response) => {
+      http.post(domain, sessionId, namespacePrefix, body).then((response) => {
         log.log('End Call Set Package Info');
         resolve(response);
       }).catch((e) => {
@@ -451,42 +401,10 @@ function callSetPackageInfo(resBody, sessionId, domain, namespacePrefix, log) {
   });
 }
 
-function callUpdateInfo(resBody, domain, sessionId, log) {
-  return new Promise((resolve, reject) => {
-    try {
-      let logText = '';
-      log.logs.forEach((log) => {
-        logText += `${log}\n
-        `;
-      });
-      resBody.logs = logText;
-      log.log('Start Call Update Info');
-      const headers = {
-        // Authorization: `OAuth ${sessionId}`,
-        Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
-        'Content-Type': 'application/json',
-      };
-      const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      // const url = `https://${domain}/services/apexrest/unlocked-packages`;
-      const body = { methodType: constants.METHOD_TYPE_UPDATE_INFO, body: JSON.stringify(resBody) };
-      axios.post(url, body, { headers }).then((response) => {
-        log.log('End Call Update Info');
-        resolve(response);
-      }).catch((e) => {
-        log.log(`Error Call Update Info\n${e}`);
-        reject(e);
-      });
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
 module.exports = {
   checkProjectDirectory,
   setInstanceUrl,
   callChildProcess,
-  callComponentList,
   convertToBuffer,
   unzipComponentList,
   generatePackageXML,
@@ -495,6 +413,5 @@ module.exports = {
   removeProject,
   addExistProjectToSFDXProject,
   mergeAttachmentAndComponents,
-  callUpdateInfo,
   callSetPackageInfo,
 };

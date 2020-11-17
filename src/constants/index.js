@@ -21,6 +21,9 @@ const PACKAGE_INSTALLATION_URL_NOT_FOUND = 'Package installation URL not found.'
 const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
 const SOURCE_OBJECT_BRANCH = 'Component__c';
 
+const OBJECT_DATA = ['alerts', 'searchLayouts', 'assignmentRule', 'autoResponseRule', 'businessProcesses', 'compactLayouts', 'escalationRule', 'fields', 'fieldSets', 'knowledgePublishes', 'fieldUpdates',
+  'labels', 'listViews', 'ManagedTopic', 'matchingRules', 'outboundMessages', 'rules', 'recordTypes', 'sharingCriteriaRules', 'sharingOwnerRules', 'sharingReasons', 'tasks', 'validationRules', 'webLinks'];
+
 const CREATE_PACKAGE_REQUIRED_FIELDS = ['username', 'userId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 const CREATE_PACKAGE_VERSION_REQUIRED_FIELDS = ['versionName', 'versionKey', 'componentList', 'username', 'userId', 'unlockedPackageVersionId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sfdxProject', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 
@@ -68,6 +71,7 @@ module.exports = {
   PACKAGE_INSTALLATION_URL_NOT_FOUND,
   SOURCE_OBJECT_BRANCH,
   SOURCE_OBJECT_DEPLOYMENT,
+  OBJECT_DATA,
   getSFDXCreateProject,
   getSFDXConvertMetadata,
   getSFDXCreateUnlockedPackage,

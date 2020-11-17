@@ -1,8 +1,8 @@
-const axios = require('axios');
 const fs = require('fs');
 const AdmZip = require('adm-zip');
 const convert = require('xml-js');
 const childProcess = require('child_process');
+const http = require('../../../services/http');
 const constants = require('../../../constants');
 
 function callChildProcess(command, log, options = {}, isCreateProject = false) {
@@ -21,6 +21,7 @@ function callChildProcess(command, log, options = {}, isCreateProject = false) {
           reject(e.message);
         } else {
           log.log(`End Call Child Process ${command}`);
+          log.log(stdout);
           resolve(stdout);
         }
       }));
@@ -82,16 +83,8 @@ function callComponentList(domain, sessionId, attachmentIdList, attachmentsCount
   log.log('Start Call Component List');
   return new Promise((resolve, reject) => {
     try {
-      const headers = {
-        Authorization: `OAuth ${sessionId}`,
-        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
-        'Content-Type': 'application/json',
-      };
-      // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      const prefix = namespacePrefix ? `${namespacePrefix}/` : '';
-      const url = `https://${domain}/services/apexrest/${prefix}unlocked-packages`;
       const body = { methodType: constants.METHOD_TYPE_GET_ATTACHMENTS, body: JSON.stringify(attachmentIdList) };
-      axios.post(url, body, { headers }).then((response) => {
+      http.post(domain, sessionId, namespacePrefix, body).then((response) => {
         let { data } = response;
         data = JSON.parse(data);
         log.log(`Component List Length, ${data.recordList.length}`);
@@ -288,7 +281,10 @@ function removeFieldsFromObject(fullPath, log) {
 
       if (currentObject.elements && currentObject.elements.length) {
         if (currentObject.elements[0].elements && currentObject.elements[0].elements.length) {
-          currentObject.elements[0].elements = currentObject.elements[0].elements.filter((e) => e.name !== 'fields');
+          constants.OBJECT_DATA.forEach((object) => {
+            currentObject.elements[0].elements = currentObject.elements[0].elements.filter((e) => e.name !== object);
+          });
+
           fs.writeFile(fullPath, convert.js2xml(currentObject), (err) => {
             if (err) {
               log.log(`Error Remove Fields From Project\n${err}`);
@@ -420,51 +416,28 @@ function getSFDXProject(projectName, log) {
   });
 }
 
-function getInstallationURL(sfdxProject, packageName, versionNumber, log) {
+function getInstallationURL(sfdxProject, body, log) {
   return new Promise((resolve, reject) => {
     try {
-      const numbers = versionNumber.split('.');
-      const number = `${numbers[0]}.${numbers[1]}.${numbers[2]}`;
-      log.log('Start Get Installation URL');
-      Object.keys(sfdxProject.packageAliases).forEach((f) => {
-        if (f.includes(`${packageName}@${number}`)) {
-          const url = `https://login.salesforce.com/packaging/installPackage.apexp?p0=${sfdxProject.packageAliases[f]}`;
-          resolve(url);
-          log.log(`End Get Installation URL\n${url}`);
+      if (sfdxProject.packageAliases) {
+        let versionNumber;
+        if (body.versionNumber) {
+          versionNumber = body.versionNumber;
+        } else {
+          const number = Object.keys(sfdxProject.packageAliases).length;
+          const keys = Object.keys(sfdxProject.packageAliases);
+          versionNumber = Object.values(keys)[number - 1];
+          console.log('--- versionNumber', versionNumber);
         }
-      });
-      reject();
+        log.log('Start Get Installation URL');
+        const url = `https://login.salesforce.com/packaging/installPackage.apexp?p0=${sfdxProject.packageAliases[versionNumber]}`;
+        resolve(url);
+      }
+
+      reject('End Get Installation URL None URL');
       log.log('End Get Installation URL None URL');
     } catch (e) {
-      log.log(`Error Get SFDX Project\n${e}`);
-      reject(e);
-    }
-  });
-}
-
-// function callSetPackageInfo(sfdxProject, packageName, unlockedPackageId, tempLogId, sessionId, domain, log) {
-function callSetPackageInfo(resBody, sessionId, domain, log) {
-  return new Promise((resolve, reject) => {
-    try {
-      log.log('Start Call Set Package Info');
-      const headers = {
-        Authorization: `OAuth ${sessionId}`,
-        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
-        'Content-Type': 'application/json',
-      };
-      // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
-      const url = `https://${domain}/services/apexrest/unlocked-packages`;
-
-      const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO, body: JSON.stringify(resBody) };
-      axios.post(url, body, { headers }).then((response) => {
-        log.log('End Call Set Package Info');
-        resolve(response);
-      }).catch((e) => {
-        log.log(`Error Call Set Package Info\n${e}`);
-        reject(e);
-      });
-    } catch (e) {
-      log.log(`Error Call Set Package Info\n${e}`);
+      log.log(`Error Get Installation URL\n${e}`);
       reject(e);
     }
   });
@@ -473,23 +446,10 @@ function callSetPackageInfo(resBody, sessionId, domain, log) {
 function callUpdateInfo(resBody, domain, sessionId, namespacePrefix, log) {
   return new Promise((resolve, reject) => {
     try {
-      let logText = '';
-      log.logs.forEach((log) => {
-        logText += `${log}\n
-        `;
-      });
-      resBody.logs = logText;
+      resBody.logs = JSON.stringify(log.logs);
       log.log('Start Call Update Info');
-      const headers = {
-        Authorization: `OAuth ${sessionId}`,
-        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQI6CKP4LPHpBFNzmzQaFqpllo_244R0L2eesvsaGnm6ZQe4tIFdKeObIXTpLen8vJIWL_OjJzieCAqPqsKCDrqkT.MBO',
-        'Content-Type': 'application/json',
-      };
-      const prefix = namespacePrefix ? `${namespacePrefix}/` : '';
-      const url = `https://${domain}/services/apexrest/${prefix}unlocked-packages`;
-      // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
       const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO, body: JSON.stringify(resBody) };
-      axios.post(url, body, { headers }).then((response) => {
+      http.post(domain, sessionId, namespacePrefix, body).then((response) => {
         log.log('End Call Update Info');
         resolve(response);
       }).catch((e) => {
@@ -516,6 +476,5 @@ module.exports = {
   addExistProjectToSFDXProject,
   mergeAttachmentAndComponents,
   callUpdateInfo,
-  callSetPackageInfo,
   addSFDXPackage,
 };
