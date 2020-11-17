@@ -427,7 +427,6 @@ function getInstallationURL(sfdxProject, body, log) {
           const number = Object.keys(sfdxProject.packageAliases).length;
           const keys = Object.keys(sfdxProject.packageAliases);
           versionNumber = Object.values(keys)[number - 1];
-          console.log('--- versionNumber', versionNumber);
         }
         log.log('Start Get Installation URL');
         const url = `https://login.salesforce.com/packaging/installPackage.apexp?p0=${sfdxProject.packageAliases[versionNumber]}`;

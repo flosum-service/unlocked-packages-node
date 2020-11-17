@@ -5,7 +5,7 @@ function post(domain, sessionId, namespacePrefix, body) {
     try {
       const headers = {
         Authorization: `OAuth ${sessionId}`,
-        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQDqysXj3J_eRVv.fB63AjvR6ijh4my2XvRwD6iY.kgKlAkFOE5RDeKKhCXqZ.wlQOohfBe8mBJhhv0Qnt8pTIT_JkC_I',
+        // Authorization: 'OAuth 00D2w00000FaaEC!AQEAQIbfsbWDhocbRDEKq9v0Zu_mjhbMpHsVI44bxCcAdnVZ2LOzwd3X0CrDp_dTZ..gs90KnMehUs5Eoim1uT6VuVxrtQda',
         'Content-Type': 'application/json',
       };
       // const url = 'https://up-karpes-dev-ed-dev-ed.my.salesforce.com/services/apexrest/unlocked-packages';
@@ -14,7 +14,13 @@ function post(domain, sessionId, namespacePrefix, body) {
       axios.post(url, body, { headers }).then((response) => {
         resolve(response);
       }).catch((e) => {
-        reject(e);
+        if (e && e.response) {
+          reject(e.response.data);
+        } else if (error.request) {
+          reject(error.request);
+        } else {
+          reject(error.message);
+        }
       });
     } catch (e) {
       reject(e);
