@@ -10,38 +10,38 @@ function createUnlockedPackageVersion(body, log) {
       unlockedPackageVersionId: body.unlockedPackageVersionId,
     };
     Promise.resolve()
-      // .then(() => helper.checkProjectDirectory(projectName)
-      //   .then((isExist) => {
-      //     if (isExist) {
-      //       reject(constants.PROJECT_DIRECTORY_IS_EXIST);
-      //     } else {
-      //       return helper.callChildProcess(constants.getSFDXCreateProject(projectName), log);
-      //     }
-      //   }))
-      // .then(() => helper.setInstanceUrl(projectName, body.domain, log))
-      // .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), body.componentList.length, body.namespacePrefix, log))
-      // .then((result) => helper.mergeAttachmentAndComponents(body.componentList, result, log))
-      // .then((result) => helper.convertToBuffer(result, log))
-      // .then((componentList) => helper.unzipComponentList(componentList, projectName, body.sourceObjectName, log))
-      // .then(() => helper.generatePackageXML(body.componentList, projectName, log))
-      // .then(() => helper.callChildProcess(
-      //   constants.getSFDXConvertMetadata(`./${constants.UNZIP_CATALOG_NAME}`),
-      //   log,
-      //   { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
-      // ))
-      // .then(() => helper.addSFDXPackage(projectName, body.sfdxProject, log))
-      // .then(() => {
-      //   if (process.env.MODE !== 'TEST') {
-      //     log.log('Dev Mode');
-      //     return helper.callChildProcess(
-      //       constants.getSFDXCreateUnlockedPackageVersion(body.packageName, body.sessionId, body.versionKey, body.versionName, body.description, body.versionNumber),
-      //       log,
-      //       { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
-      //     );
-      //   }
-      //   log.log('Test Mode');
-      //   return Promise.resolve();
-      // })
+      .then(() => helper.checkProjectDirectory(projectName)
+        .then((isExist) => {
+          if (isExist) {
+            reject(constants.PROJECT_DIRECTORY_IS_EXIST);
+          } else {
+            return helper.callChildProcess(constants.getSFDXCreateProject(projectName), log);
+          }
+        }))
+      .then(() => helper.setInstanceUrl(projectName, body.domain, log))
+      .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), body.componentList.length, body.namespacePrefix, log))
+      .then((result) => helper.mergeAttachmentAndComponents(body.componentList, result, log))
+      .then((result) => helper.convertToBuffer(result, log))
+      .then((componentList) => helper.unzipComponentList(componentList, projectName, body.sourceObjectName, log))
+      .then(() => helper.generatePackageXML(body.componentList, projectName, log))
+      .then(() => helper.callChildProcess(
+        constants.getSFDXConvertMetadata(`./${constants.UNZIP_CATALOG_NAME}`),
+        log,
+        { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
+      ))
+      .then(() => helper.addSFDXPackage(projectName, body.sfdxProject, log))
+      .then(() => {
+        if (process.env.MODE !== 'TEST') {
+          log.log('Dev Mode');
+          return helper.callChildProcess(
+            constants.getSFDXCreateUnlockedPackageVersion(body.packageName, body.sessionId, body.versionKey, body.versionName, body.description, body.versionNumber),
+            log,
+            { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
+          );
+        }
+        log.log('Test Mode');
+        return Promise.resolve();
+      })
       .then(() => helper.getSFDXProject(projectName, log))
       .then((sfdxProject) => {
         resBody.sfdxProject = JSON.stringify(sfdxProject);
