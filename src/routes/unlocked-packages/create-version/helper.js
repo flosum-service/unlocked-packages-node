@@ -407,6 +407,7 @@ function getSFDXProject(projectName, log) {
         }
         const sfdxProject = JSON.parse(data.toString('utf-8'));
         log.log('End Get SFDX Project');
+        log.log(sfdxProject);
         resolve(sfdxProject);
       });
     } catch (e) {
@@ -421,15 +422,12 @@ function getInstallationURL(sfdxProject, body, log) {
     try {
       if (sfdxProject.packageAliases) {
         let versionNumber;
-        if (body.versionNumber) {
-          versionNumber = body.versionNumber;
-        } else {
-          const number = Object.keys(sfdxProject.packageAliases).length;
-          const keys = Object.keys(sfdxProject.packageAliases);
-          versionNumber = Object.values(keys)[number - 1];
-        }
+        const number = Object.keys(sfdxProject.packageAliases).length;
+        const keys = Object.keys(sfdxProject.packageAliases);
+        versionNumber = Object.values(keys)[number - 1];
         log.log('Start Get Installation URL');
         const url = `https://login.salesforce.com/packaging/installPackage.apexp?p0=${sfdxProject.packageAliases[versionNumber]}`;
+        log.log(url);
         resolve(url);
       }
 
