@@ -43,7 +43,11 @@ function createUnlockedPackage(body, log) {
             resBody.packageId = packageId;
             resBody.unlockedPackageId = body.unlockedPackageId;
             resBody.tempLogId = body.unlockedPackageTempLogId;
-            resBody.logs = JSON.stringify(log.logs);
+            let logs = '';
+            log.logs.forEach(log => {
+              logs += `${log}\n`;
+            });
+            resBody.logs = logs;
             resBody.status = 'Completed';
             return helper.callSetPackageInfo(resBody, body.sessionId, body.domain, body.namespacePrefix, log);
           });

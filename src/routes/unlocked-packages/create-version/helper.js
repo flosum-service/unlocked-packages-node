@@ -443,7 +443,11 @@ function getInstallationURL(sfdxProject, body, log) {
 function callUpdateInfo(resBody, domain, sessionId, namespacePrefix, log) {
   return new Promise((resolve, reject) => {
     try {
-      resBody.logs = JSON.stringify(log.logs);
+      let logs = '';
+      log.logs.forEach(log => {
+        logs += `${log}\n`;
+      });
+      resBody.logs = logs;
       log.log('Start Call Update Info');
       const body = { methodType: constants.METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO, body: JSON.stringify(resBody) };
       http.post(domain, sessionId, namespacePrefix, body).then((response) => {

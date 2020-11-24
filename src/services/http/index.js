@@ -14,12 +14,16 @@ function post(domain, sessionId, namespacePrefix, body) {
       axios.post(url, body, { headers }).then((response) => {
         resolve(response);
       }).catch((e) => {
-        if (e && e.response) {
-          reject(e.response.data);
-        } else if (error.request) {
-          reject(error.request);
+        if (e && e.response && e.response.data) {
+          if (typeof e.response.data !== "string") {
+            reject(JSON.stringify(e.response.data));
+          } else {
+            reject(e.response.data);
+          }
+        } else if (e.request) {
+          reject(e.request);
         } else {
-          reject(error.message);
+          reject(e.message);
         }
       });
     } catch (e) {
