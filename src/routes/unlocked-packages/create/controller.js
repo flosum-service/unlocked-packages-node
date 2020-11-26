@@ -54,7 +54,11 @@ function createUnlockedPackage(body, log) {
       })
       .then(() => helper.removeProject(projectName, log))
       .catch((e) => {
-        resBody.logs = JSON.stringify(log.logs);
+        let logs = '';
+        log.logs.forEach(log => {
+          logs += `${log}\n`;
+        });
+        resBody.logs = logs;
         resBody.status = 'Error';
         resBody.error = e.toString();
         helper.callSetPackageInfo(resBody, body.sessionId, body.domain, body.namespacePrefix, log)

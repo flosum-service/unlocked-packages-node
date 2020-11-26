@@ -54,7 +54,11 @@ function createUnlockedPackageVersion(body, log) {
       })
       .then(() => {
         log.log('End Create Unlocked Package Version');
-        resBody.logs = JSON.stringify(log.logs);
+        let logs = '';
+        log.logs.forEach(log => {
+          logs += `${log}\n`;
+        });
+        resBody.logs = logs;
         helper.callUpdateInfo(resBody, body.domain, body.sessionId, body.namespacePrefix, log)
           .then(() => resolve())
           .catch((e) => reject(e));
@@ -70,6 +74,11 @@ function createUnlockedPackageVersion(body, log) {
         resBody.error = error;
         log.log('Error Create Unlocked Package');
         log.log(error);
+        let logs = '';
+        log.logs.forEach(log => {
+          logs += `${log}\n`;
+        });
+        resBody.logs = logs;
         return helper.callUpdateInfo(resBody, body.domain, body.sessionId, body.namespacePrefix, log)
           .then(() => reject(e))
           .catch((e1) => reject(e1));
