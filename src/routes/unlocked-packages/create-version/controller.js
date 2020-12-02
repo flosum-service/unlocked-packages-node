@@ -46,6 +46,17 @@ function createUnlockedPackageVersion(body, log) {
       .then((sfdxProject) => {
         resBody.sfdxProject = JSON.stringify(sfdxProject);
         resBody.status = 'Completed';
+        if (sfdxProject.packageAliases) {
+          const packageAliasList = Object.keys(sfdxProject.packageAliases);
+          if (packageAliasList && packageAliasList.length) {
+            const versionAlias = packageAliasList[packageAliasList.length - 1];
+            if (versionAlias.includes('@')) {
+              resBody.versionNumber = versionAlias.split('@')[1];
+            }
+            resBody.packageId = sfdxProject.packageAliases[packageAliasList[packageAliasList.length - 1]]
+          }
+        }
+
         return helper.getInstallationURL(sfdxProject, body, log);
       })
       .then((installationURL) => {

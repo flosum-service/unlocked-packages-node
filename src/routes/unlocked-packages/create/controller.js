@@ -30,7 +30,11 @@ function createUnlockedPackage(body, log) {
       .then((stdout) => {
         if (stdout === constants.PACKAGE_WITH_THIS_NAME_IS_EXIST) {
           log.log(`${constants.ERROR}: ${constants.PACKAGE_WITH_THIS_NAME_IS_EXIST}`);
-          resBody.logs = JSON.stringify(log.logs);
+            let logs = '';
+            log.logs.forEach(log => {
+                logs += `${log}\n`;
+            });
+            resBody.logs = logs;
           resBody.status = 'Error';
           resBody.error = constants.PACKAGE_WITH_THIS_NAME_IS_EXIST;
           return helper.callSetPackageInfo(resBody, body.sessionId, body.domain, body.namespacePrefix, log);
