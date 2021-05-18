@@ -7,7 +7,7 @@ const utils = require('../../../services/utils');
 const router = new Router();
 
 router.post('/', (req, res) => {
-  const log = logger.createLog(`get-installed-packages:${req.headers['x-request-id']}`);
+  const log = logger.createLog(`list-installed-packages:${req.headers['x-request-id']}`);
   log.log(constants.START_GET_INSTALLED_PACKAGES);
 
   const fields = utils.checkRequiredFields(req.body, constants.GET_INSTALLED_PACKAGES_REQUIRED_FIELDS);

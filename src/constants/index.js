@@ -12,7 +12,7 @@ const COMPONENT_LENGTH_WRONG = 'There must be at least one component.';
 const DEV_NODE_ENV = 'development';
 const START_CREATE_UNLOCKED_PACKAGE = 'Start Create Unlocked Package';
 const START_UPDATE_UNLOCKED_PACKAGE = 'Start Update Unlocked Package';
-const START_GET_INSTALLED_PACKAGES = 'Start Get Installed packages';
+const START_LIST_INSTALLED_PACKAGES = 'Start List Installed packages';
 const ATTACHMENTS_DELETED = 'The definition of some of these components may have been removed.';
 const UNZIP_CATALOG_NAME = 'project_data';
 const PACKAGE_NAME_MUST_BE_UNIQUE = 'The package name must be unique for the namespace.';
@@ -50,7 +50,7 @@ const OBJECT_DATA = [
   'webLinks'
 ];
 
-const GET_INSTALLED_PACKAGES_REQUIRED_FIELDS = ['instanceUrl', 'accessToken'];
+const LIST_INSTALLED_PACKAGES_REQUIRED_FIELDS = ['instanceUrl', 'accessToken'];
 const CREATE_PACKAGE_REQUIRED_FIELDS = ['username', 'userId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 const CREATE_PACKAGE_VERSION_REQUIRED_FIELDS = ['versionName', 'versionKey', 'componentList', 'username', 'userId', 'unlockedPackageVersionId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sfdxProject', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 
@@ -87,10 +87,10 @@ module.exports = {
   DEV_NODE_ENV,
   START_CREATE_UNLOCKED_PACKAGE,
   START_UPDATE_UNLOCKED_PACKAGE,
-  START_GET_INSTALLED_PACKAGES,
+  START_GET_INSTALLED_PACKAGES: START_LIST_INSTALLED_PACKAGES,
   ATTACHMENTS_DELETED,
   UNZIP_CATALOG_NAME,
-  GET_INSTALLED_PACKAGES_REQUIRED_FIELDS,
+  GET_INSTALLED_PACKAGES_REQUIRED_FIELDS: LIST_INSTALLED_PACKAGES_REQUIRED_FIELDS,
   CREATE_PACKAGE_REQUIRED_FIELDS,
   CREATE_PACKAGE_VERSION_REQUIRED_FIELDS,
   REQUIRED_FIELDS_ERROR,
