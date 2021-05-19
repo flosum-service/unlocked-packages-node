@@ -22,6 +22,18 @@ const PACKAGE_INSTALLATION_URL_NOT_FOUND = 'Package installation URL not found.'
 const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
 const SOURCE_OBJECT_BRANCH = 'Component__c';
 
+const SFDX_PROJECT_EXAMPLE = '{\n' +
+  '  "packageDirectories": [\n' +
+  '    {\n' +
+  '      "path": "force-app",\n' +
+  '      "default": true\n' +
+  '    }\n' +
+  '  ],\n' +
+  '  "namespace": "",\n' +
+  '  "sfdcLoginUrl": "https://login.salesforce.com",\n' +
+  '  "sourceApiVersion": "50.0"\n' +
+  '}';
+
 const OBJECT_DATA = [
   'alerts',
   'actionOverrides',
@@ -106,6 +118,7 @@ module.exports = {
   SOURCE_OBJECT_BRANCH,
   SOURCE_OBJECT_DEPLOYMENT,
   OBJECT_DATA,
+  SFDX_PROJECT_EXAMPLE,
   getSFDXCreateProject,
   getSFDXConvertMetadata,
   getSFDXCreateUnlockedPackage,

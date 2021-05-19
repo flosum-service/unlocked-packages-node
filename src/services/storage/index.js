@@ -1,4 +1,5 @@
 const fs = require('fs');
+const constants = require('../../constants');
 
 function setInstanceUrl(projectName, domain, log) {
   return new Promise((resolve, reject) => {
@@ -25,21 +26,54 @@ function setInstanceUrl(projectName, domain, log) {
   });
 }
 
+function createSFDXProjectJSON(projectName, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start Create SFDX Project JSON');
+      fs.writeFile(`${projectName}/sfdx-project.json`, constants.SFDX_PROJECT_EXAMPLE, ((err) => {
+        if (err) {
+          log.log(`Error Create SFDX Project JSON\n${err}`);
+          reject(err);
+        }
+        log.log('End Create SFDX Project JSON');
+        resolve();
+      }));
+    } catch (e) {
+      log.log(`Error Create SFDX Project JSON\n${e}`);
+      reject(e);
+    }
+  });
+}
+
+function createProjectDirectory(projectName, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start Create Project Directory');
+      fs.mkdirSync(`./${projectName}`);
+      log.log('End Create Project Directory');
+      resolve();
+    } catch (e) {
+      log.log('Error Create Project Directory');
+      reject(e);
+    }
+  });
+}
+
 function removeProject(projectName, log) {
   return new Promise((resolve, reject) => {
-    log.log('Start Remove Project');
+    log.log('Start Remove Project Directory');
     try {
       fs.rmdir(`./${projectName}`, { recursive: true }, (e) => {
         if (e) {
-          log.log(`Error Remove Project${e}`);
+          log.log(`Error Remove Project Directory ${e}`);
           reject(e);
         }
-        log.log('End Remove Project');
+        log.log('End Remove Project Directory');
         resolve();
       });
       resolve();
     } catch (e) {
-      log.log(`Error Remove Project${e}`);
+      log.log(`Error Remove Project Directory ${e}`);
       reject(e);
     }
   });
@@ -47,5 +81,7 @@ function removeProject(projectName, log) {
 
 module.exports = {
   setInstanceUrl,
+  createProjectDirectory,
+  createSFDXProjectJSON,
   removeProject
 }
