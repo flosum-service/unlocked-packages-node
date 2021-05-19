@@ -18,7 +18,7 @@ function getInstalledPackageList(body, log) {
         .then(() => childProcess.call(constants.getSFDXInstalledPackageList(accessToken), log, { cwd: `./${projectName}`, maxBuffer: 1024 * 500 }))
         .then(resolve)
         .catch(reject)
-      // .then(() => storage.removeProject(projectName, log));
+      .then(() => storage.removeProject(projectName, log));
     } catch (e) {
       reject('Error: ' + e);
     }
