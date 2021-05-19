@@ -7,9 +7,9 @@ const router = new Router();
 
 router.post('/', (req, res) => {
   const log = logger.createLog(`list-installed-packages:${req.headers['x-request-id']}`);
-  log.log(constants.START_GET_INSTALLED_PACKAGES);
+  log.log(constants.START_LIST_INSTALLED_PACKAGES);
 
-  const fields = utils.checkRequiredFields(req.body, constants.GET_INSTALLED_PACKAGES_REQUIRED_FIELDS);
+  const fields = utils.checkRequiredFields(req.body, constants.LIST_INSTALLED_PACKAGES_REQUIRED_FIELDS);
   if (fields.length) {
     log.log(constants.REQUIRED_FIELDS_ERROR);
     const body = {
