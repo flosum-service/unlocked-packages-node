@@ -1,5 +1,7 @@
 const helper = require('./helper');
 const constants = require('../../../constants');
+const childProcess = require('../../../services/child-process');
+const storage = require('../../../services/storage');
 
 function createUnlockedPackageVersion(body, log) {
   return new Promise((resolve, reject) => {
@@ -15,16 +17,16 @@ function createUnlockedPackageVersion(body, log) {
           if (isExist) {
             reject(constants.PROJECT_DIRECTORY_IS_EXIST);
           } else {
-            return helper.callChildProcess(constants.getSFDXCreateProject(projectName), log);
+            return childProcess.call(constants.getSFDXCreateProject(projectName), log);
           }
         }))
-      .then(() => helper.setInstanceUrl(projectName, body.domain, log))
+      .then(() => storage.setInstanceUrl(projectName, body.domain, log))
       .then(() => helper.callComponentList(body.domain, body.sessionId, body.componentList.map((comp) => comp.id), body.componentList.length, body.namespacePrefix, log))
       .then((result) => helper.mergeAttachmentAndComponents(body.componentList, result, log))
       .then((result) => helper.convertToBuffer(result, log))
       .then((componentList) => helper.unzipComponentList(componentList, projectName, body.sourceObjectName, log))
       .then(() => helper.generatePackageXML(body.componentList, projectName, log))
-      .then(() => helper.callChildProcess(
+      .then(() => childProcess.call(
         constants.getSFDXConvertMetadata(`./${constants.UNZIP_CATALOG_NAME}`),
         log,
         { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
@@ -33,7 +35,7 @@ function createUnlockedPackageVersion(body, log) {
       .then(() => {
         if (process.env.MODE !== 'TEST') {
           log.log('Dev Mode');
-          return helper.callChildProcess(
+          return childProcess.call(
             constants.getSFDXCreateUnlockedPackageVersion(body.packageName, body.sessionId, body.versionKey, body.versionName, body.description, body.versionNumber),
             log,
             { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
@@ -75,7 +77,7 @@ function createUnlockedPackageVersion(body, log) {
           .catch((e) => reject(e));
       })
       .then((response) => resolve(response))
-      .then(() => helper.removeProject(projectName, log))
+      .then(() => storage.removeProject(projectName, log))
       .catch((e) => {
         let error = 'Error';
         if (e) {
@@ -94,7 +96,7 @@ function createUnlockedPackageVersion(body, log) {
           .then(() => reject(e))
           .catch((e1) => reject(e1));
       })
-      .then(() => helper.removeProject(projectName, log));
+      .then(() => storage.removeProject(projectName, log));
   });
 }
 

@@ -73,6 +73,11 @@ function getSFDXCreateUnlockedPackageVersion(packageName, sessionId, key, versio
   versionNumber = versionNumber ? `-n "${versionNumber}"` : '';
   return `sfdx force:package:version:create -p "${packageName}" -v "${sessionId}" -t "Unlocked" -d "force-app" ${versionName} ${versionDescription} ${versionNumber} -k "${key}" --wait 10`;
 }
+
+function getSFDXInstalledPackageList(accessToken) {
+  return `sfdx force:package:installed:list -u "${accessToken}" --json`;
+}
+
 module.exports = {
   SUCCESS,
   ERROR,
@@ -105,4 +110,5 @@ module.exports = {
   getSFDXConvertMetadata,
   getSFDXCreateUnlockedPackage,
   getSFDXCreateUnlockedPackageVersion,
+  getSFDXInstalledPackageList
 };

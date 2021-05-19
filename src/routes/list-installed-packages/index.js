@@ -1,9 +1,8 @@
 const { Router } = require('express');
-const logger = require('../../../services/logger');
-const constants = require('../../../constants');
+const logger = require('../../services/logger');
+const constants = require('../../constants');
 const controller = require('./controller');
-const utils = require('../../../services/utils');
-
+const utils = require('../../services/utils');
 const router = new Router();
 
 router.post('/', (req, res) => {
@@ -21,14 +20,17 @@ router.post('/', (req, res) => {
       },
     };
     log.log(body);
-    return ;
+    return res.status(400).send(body);
   }
   controller.getInstalledPackageList(req.body, log)
     .then((result) => {
       log.log('Completed');
       res.status(200).send(result);
     })
-    .catch((e) => log.log(`Error\n${e}`));
+    .catch((e) => {
+      log.log(`Error\n${e}`)
+      res.status(400).send(`Error\n${e}`);
+    });
 });
 
 module.exports = router;
