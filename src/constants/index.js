@@ -92,7 +92,7 @@ function getSFDXInstalledPackageList(accessToken) {
 }
 
 function getSFDXCreatedPackageList(accessToken) {
-  return `sfdx force:package:version:create:list -v "${accessToken}" --json`;
+  return `sfdx force:package:list -v "${accessToken}" --json`;
 }
 
 module.exports = {
