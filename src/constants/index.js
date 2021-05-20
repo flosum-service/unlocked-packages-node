@@ -14,6 +14,7 @@ const START_CREATE_UNLOCKED_PACKAGE = 'Start Create Unlocked Package';
 const START_UPDATE_UNLOCKED_PACKAGE = 'Start Update Unlocked Package';
 const START_LIST_INSTALLED_PACKAGES = 'Start List Installed packages';
 const START_LIST_CREATED_PACKAGES = 'Start Created Installed packages';
+const START_CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE = 'Start Create Snapshot From Unlocked Package';
 const ATTACHMENTS_DELETED = 'The definition of some of these components may have been removed.';
 const UNZIP_CATALOG_NAME = 'project_data';
 const PACKAGE_NAME_MUST_BE_UNIQUE = 'The package name must be unique for the namespace.';
@@ -22,6 +23,7 @@ const PROJECT_DIRECTORY_IS_EXIST = 'A project with these parameters already exis
 const PACKAGE_INSTALLATION_URL_NOT_FOUND = 'Package installation URL not found.';
 const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
 const SOURCE_OBJECT_BRANCH = 'Component__c';
+const ZIP_PACKAGE_NAME = 'unpackaged.zip';
 
 const SFDX_PROJECT_EXAMPLE = '{\n' +
   '  "packageDirectories": [\n' +
@@ -64,6 +66,7 @@ const OBJECT_DATA = [
 ];
 
 const LIST_INSTALLED_PACKAGES_REQUIRED_FIELDS = ['instanceUrl', 'accessToken'];
+const CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE_REQUIRED_FIELDS = ['instanceUrl', 'accessToken', 'packageName', 'metadataLogId', 'logAttachmentId', 'namespacePrefix'];
 const CREATE_PACKAGE_REQUIRED_FIELDS = ['username', 'userId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 const CREATE_PACKAGE_VERSION_REQUIRED_FIELDS = ['versionName', 'versionKey', 'componentList', 'username', 'userId', 'unlockedPackageVersionId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sfdxProject', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 
@@ -95,6 +98,10 @@ function getSFDXCreatedPackageList(accessToken) {
   return `sfdx force:package:list -v "${accessToken}" --json`;
 }
 
+function getSFDXRetrievePackage(accessToken, packageName) {
+  return `sfdx force:mdapi:retrieve -u "${accessToken}" -p "${packageName}" -r ./`;
+}
+
 module.exports = {
   SUCCESS,
   ERROR,
@@ -111,9 +118,11 @@ module.exports = {
   START_UPDATE_UNLOCKED_PACKAGE,
   START_LIST_INSTALLED_PACKAGES,
   START_LIST_CREATED_PACKAGES,
+  START_CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE,
   ATTACHMENTS_DELETED,
   UNZIP_CATALOG_NAME,
   LIST_INSTALLED_PACKAGES_REQUIRED_FIELDS,
+  CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE_REQUIRED_FIELDS,
   CREATE_PACKAGE_REQUIRED_FIELDS,
   CREATE_PACKAGE_VERSION_REQUIRED_FIELDS,
   REQUIRED_FIELDS_ERROR,
@@ -125,10 +134,12 @@ module.exports = {
   SOURCE_OBJECT_DEPLOYMENT,
   OBJECT_DATA,
   SFDX_PROJECT_EXAMPLE,
+  ZIP_PACKAGE_NAME,
   getSFDXCreateProject,
   getSFDXConvertMetadata,
   getSFDXCreateUnlockedPackage,
   getSFDXCreateUnlockedPackageVersion,
   getSFDXInstalledPackageList,
-  getSFDXCreatedPackageList
+  getSFDXCreatedPackageList,
+  getSFDXRetrievePackage
 };

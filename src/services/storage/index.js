@@ -1,5 +1,6 @@
 const fs = require('fs');
 const constants = require('../../constants');
+const AdmZip = require('adm-zip');
 
 function setInstanceUrl(projectName, domain, log) {
   return new Promise((resolve, reject) => {
@@ -79,9 +80,26 @@ function removeProject(projectName, log) {
   });
 }
 
+
+function unZip(zipPath, projectPath, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('*** Start Create Zip');
+      const zip = new AdmZip(zipPath);
+      zip.extractAllTo(projectPath, false);
+      resolve(zip);
+      log.log('*** End Create Zip');
+    } catch (e) {
+      log.log('*** Error Create Zip');
+      reject(e);
+    }
+  });
+}
+
 module.exports = {
   setInstanceUrl,
   createProjectDirectory,
   createSFDXProjectJSON,
-  removeProject
+  removeProject,
+  unZip
 }
