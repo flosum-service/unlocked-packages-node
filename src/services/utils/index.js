@@ -255,7 +255,7 @@ function checkRequiredFields(body, requiredFields) {
   }
   const missingRequiredFieldList = [];
   requiredFields.forEach((field) => {
-    if (!body[field]) {
+    if (body[field] === undefined || body[field] === null) {
       missingRequiredFieldList.push(field);
     }
   });
