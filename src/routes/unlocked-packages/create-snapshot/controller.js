@@ -20,7 +20,7 @@ function createSnapshot(body, log) {
         .then(() => storage.unZip(`${projectName}/${constants.ZIP_PACKAGE_NAME}`, projectName, log))
         .then(resolve)
         .catch(reject)
-        // .then(() => storage.removeProject(projectName, log));
+        .then(() => storage.removeProject(projectName, log));
     } catch (e) {
       reject('Error: ' + e);
     }
