@@ -3,6 +3,8 @@ const ERROR = 'Error';
 const METHOD_TYPE_GET_ATTACHMENTS = 'ATTACHMENT';
 const METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO = 'UPDATE PACKAGE VERSION INFO';
 const METHOD_TYPE_UPDATE_PACKAGE_INFO = 'UPDATE PACKAGE INFO';
+const METHOD_TYPE_CREATE_SNAPSHOT = 'CREATE SNAPSHOT';
+const METHOD_UPDATE_LOG = 'UPDATE LOG';
 const STATUS_400_INVALID_JSON_ERROR = 'STATUS 400: Invalid JSON format.';
 const STATUS_404_ENDPOINT_NOT_FOUND = 'STATUS 404: Endpoint doesn\'t exist.';
 const STATUS_500_INTERNAL_SERVER_ERROR = 'STATUS 500: Internal server error';
@@ -66,7 +68,7 @@ const OBJECT_DATA = [
 ];
 
 const LIST_INSTALLED_PACKAGES_REQUIRED_FIELDS = ['instanceUrl', 'accessToken'];
-const CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE_REQUIRED_FIELDS = ['instanceUrl', 'accessToken', 'packageName', 'metadataLogId', 'logAttachmentId', 'namespacePrefix'];
+const CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE_REQUIRED_FIELDS = ['instanceUrl', 'accessToken', 'sourceAccessToken', 'sourceUrl', 'packageName', 'orgId', 'metadataLogId', 'logAttachmentId', 'namespacePrefix'];
 const CREATE_PACKAGE_REQUIRED_FIELDS = ['username', 'userId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 const CREATE_PACKAGE_VERSION_REQUIRED_FIELDS = ['versionName', 'versionKey', 'componentList', 'username', 'userId', 'unlockedPackageVersionId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sfdxProject', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 
@@ -102,12 +104,21 @@ function getSFDXRetrievePackage(accessToken, packageName) {
   return `sfdx force:mdapi:retrieve -u "${accessToken}" -p "${packageName}" -r ./`;
 }
 
+const METADATA_FOLDER_TYPE_MAP = {
+  ApexClass: 'classes',
+  CustomObject: 'objects',
+  CustomTab: 'tabs',
+  LightningComponentBundle: 'lwc'
+}
+
 module.exports = {
   SUCCESS,
   ERROR,
   METHOD_TYPE_GET_ATTACHMENTS,
   METHOD_TYPE_UPDATE_PACKAGE_INFO,
   METHOD_TYPE_UPDATE_PACKAGE_VERSION_INFO,
+  METHOD_TYPE_CREATE_SNAPSHOT,
+  METHOD_UPDATE_LOG,
   STATUS_400_INVALID_JSON_ERROR,
   STATUS_404_ENDPOINT_NOT_FOUND,
   STATUS_500_INTERNAL_SERVER_ERROR,
@@ -141,5 +152,6 @@ module.exports = {
   getSFDXCreateUnlockedPackageVersion,
   getSFDXInstalledPackageList,
   getSFDXCreatedPackageList,
-  getSFDXRetrievePackage
+  getSFDXRetrievePackage,
+  METADATA_FOLDER_TYPE_MAP
 };
