@@ -95,11 +95,11 @@ function createComponents(type) {
   return { componentList, type: type.name };
 }
 
-function sentComponentsToFlosum(flosumUrl, flosumToken, namespacePrefix, componentList, packageName, orgId, log) {
+function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, componentList, packageName, snapshotName, orgId, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('*** Start Sent Components To Flosum');
-      const resBody = { packageName, componentList, orgId, };
+      const resBody = { packageName, componentList, orgId, snapshotName };
       const body = { methodType: constants.METHOD_TYPE_CREATE_SNAPSHOT, body: JSON.stringify(resBody) };
       http.post(flosumUrl, flosumToken, namespacePrefix, JSON.stringify(body))
         .then((res) => {
@@ -150,6 +150,6 @@ function callUpdateInfo(flosumUrl, flosumToken, logId, nameSpacePrefix, attachme
 
 module.exports = {
   createZipComponents,
-  sentComponentsToFlosum,
+  callCreateSnapshot,
   callUpdateInfo
 }

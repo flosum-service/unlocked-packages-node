@@ -68,7 +68,7 @@ const OBJECT_DATA = [
 ];
 
 const LIST_INSTALLED_PACKAGES_REQUIRED_FIELDS = ['instanceUrl', 'accessToken'];
-const CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE_REQUIRED_FIELDS = ['instanceUrl', 'accessToken', 'sourceAccessToken', 'sourceUrl', 'packageName', 'orgId', 'metadataLogId', 'logAttachmentId', 'namespacePrefix'];
+const CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE_REQUIRED_FIELDS = ['instanceUrl', 'accessToken', 'sourceAccessToken', 'sourceUrl', 'packageName', 'snapshotName', 'orgId', 'metadataLogId', 'logAttachmentId', 'namespacePrefix'];
 const CREATE_PACKAGE_REQUIRED_FIELDS = ['username', 'userId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 const CREATE_PACKAGE_VERSION_REQUIRED_FIELDS = ['versionName', 'versionKey', 'componentList', 'username', 'userId', 'unlockedPackageVersionId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sfdxProject', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 
