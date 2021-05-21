@@ -101,7 +101,7 @@ function getSFDXCreatedPackageList(accessToken) {
 }
 
 function getSFDXRetrievePackage(accessToken, packageName) {
-  return `sfdx force:mdapi:retrieve -u "${accessToken}" -p "${packageName}" -r ./`;
+  return `sfdx force:mdapi:retrieve -p "${packageName}" -r ./ -u "${accessToken}"`;
 }
 
 const METADATA_FOLDER_TYPE_MAP = {

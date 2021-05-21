@@ -4,7 +4,7 @@ const constants = require('../../constants');
 function call(command, log, options = {}, isCreateProject = false) {
   return new Promise((resolve, reject) => {
     try {
-      log.log(`Start Call Child Process ${command}`);
+      log.log(`Start Call Child Process ${command.split('-u')[0]}`);
       childProcess.exec(command, options, ((e, stdout, stderr) => {
         if (e) {
           if (isCreateProject) {
