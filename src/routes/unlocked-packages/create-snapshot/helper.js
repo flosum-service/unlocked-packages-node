@@ -184,7 +184,7 @@ function callUpdateInfo(flosumUrl, flosumToken, logId, nameSpacePrefix, attachme
         isError,
         attachmentBody: `Create Snapshot From Unlocked Package:\n\nFull Process:\n\n${log.logs.join('\n')}`,
       };
-      const url = `${flosumUrl}/services/apexrest/${nameSpacePrefix}unlocked-packages`;
+      const url = `https://${flosumUrl}/services/apexrest/${nameSpacePrefix}unlocked-packages`;
       const body = { methodType: constants.METHOD_UPDATE_LOG, body: JSON.stringify(resBody) };
       http.post(url, flosumToken, nameSpacePrefix, body)
         .then(() => {
