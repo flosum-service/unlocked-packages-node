@@ -10,13 +10,14 @@ function createZipComponents(projectPath, packageName, log) {
       log.log('*** Start Create Zip Components');
       const packageXML = fs.readFileSync(`${projectPath}/${packageName}/package.xml`);
       const packageJSON = JSON.parse(parser.toJson(packageXML));
+
       const typeList = [];
 
-      packageJSON.Package.types.forEach((type) => {
-        typeList.push(createComponents(type))
-      });
+      if (!Array.isArray(packageJSON.Package.types)) {
+        packageJSON.Package.types = [packageJSON.Package.types];
+      }
 
-      const componentList = [];
+      packageJSON.Package.types.forEach((type) => typeList.push(createComponents(type)));
 
       typeList.forEach((type) => {
         const folderType = constants.METADATA_FOLDER_TYPE_MAP[type.type];
@@ -27,52 +28,104 @@ function createZipComponents(projectPath, packageName, log) {
             { withFileTypes: true }
           );
 
-          const folderComponentList = [];
-          if (
-            type.type === 'AuraDefinitionBundle' ||
-            type.type === 'LightningComponentBundle' ||
-            type.type === 'ExperienceBundle' ||
-            type.type === 'WaveTemplateBundle'
-          ) {
-
-          } else if (type.type !== 'CustomField' && type.type !== 'CustomObject') {
+          if (type.type !== 'CustomField') {
             folderContentList.forEach((content) => {
-              if (!content.isDirectory()) {
-                folderComponentList.push(content.name);
-              }
+              type.componentList.forEach((component) => {
+                if (content.name.includes(component.apiName)) {
+                  component.fileList.push(content.name);
+                  component.isDirectory = content.isDirectory();
+                  if (!content.name.includes('-meta.xml')) {
+                    component.label = `${folderType}/${content.name}`;
+                  }
+                }
+              });
             });
 
-            folderComponentList.forEach((componentFile) => {
+            const zip = new AdmZip();
+            type.componentList.forEach((component) => {
+              if (component.isDirectory) {
+                component.fileList.forEach((file) => zip.addLocalFolder(`${typePath}/${file}`, `${folderType}/${file}`));
+              } else {
+                component.fileList.forEach((file) => zip.addLocalFile(`${typePath}/${file}`, folderType));
+              }
+              delete component.isDirectory;
+              delete component.fileList;
+            });
+            type.zip = zip.toBuffer().toString('base64');
+          } else {
+
+            const customObjectSet = new Set();
+            folderContentList.forEach((content) => {
               type.componentList.forEach((component) => {
-                if (componentFile.includes(component.apiName)) {
-                  component.fileList.push(componentFile);
+                if (component.apiName.includes(content.name.split('.')[0])) {
+                  customObjectSet.add(content.name);
+                  component.label = `${folderType}/${content.name}`;
+                  type.fileName = content.name;
                 }
-                if (!componentFile.includes('-meta.xml')) {
-                  component.label = `${folderType}/${componentFile}`;
-                }
+              });
+            });
+
+
+            const customObjectList = [];
+            customObjectSet.forEach((file) => {
+
+              customObjectList.push({
+                file: fs.readFileSync(`${typePath}/${file}`, 'utf8'),
+                fileName: file
               })
             });
-
-            type.componentList.forEach((component) => {
-              const zip = new AdmZip();
-              component.fileList.forEach((file) => {
-                zip.addLocalFile(`${typePath}/${file}`, folderType);
-              });
-              component.zip = zip.toBuffer().toString('base64');
-              delete component.fileList;
-              componentList.push(component);
-            });
+            const customFieldList = convertToCustomField(customObjectList);
+            const zip = new AdmZip();
+            customFieldList.forEach((customField) =>
+              zip.addFile(`objects/${customField.fileName}`, Buffer.from(customField.file, 'utf-8'), '')
+            );
+            type.zip = zip.toBuffer().toString('base64');;
           }
         }
       });
 
-      resolve(componentList);
+      resolve(typeList);
       log.log('*** End Create Zip Components');
     } catch (e) {
       log.log('*** Error Create Zip Components');
       reject(e);
     }
   });
+}
+
+function convertToCustomField(customObjectList) {
+  const customFieldList = [];
+  customObjectList.forEach((customObjectXML) => {
+    const customFieldRows = [];
+    const rows = customObjectXML.file.split('\n');
+    let start = false;
+    rows.forEach((row) => {
+
+      if (
+        row.includes('<?xml version="1.0" encoding="UTF-8"?>') ||
+        row.startsWith('<CustomObject') ||
+        row.startsWith('</CustomObject')
+      ) {
+        customFieldRows.push(row);
+      }
+      if (row.includes('<fields>')) {
+        start = true;
+      }
+      if (start) {
+        customFieldRows.push(row);
+      }
+
+      if (row.includes('</fields>')) {
+        start = false;
+      }
+
+    });
+    customFieldList.push({
+      fileName: customObjectXML.fileName,
+      file: customFieldRows.join('\n')
+    });
+  });
+  return customFieldList;
 }
 
 function createComponents(type) {
@@ -95,11 +148,11 @@ function createComponents(type) {
   return { componentList, type: type.name };
 }
 
-function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, componentList, packageName, snapshotName, orgId, log) {
+function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, typeList, packageName, snapshotName, orgId, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('*** Start Sent Components To Flosum');
-      const resBody = { packageName, componentList, orgId, snapshotName };
+      const resBody = { packageName, typeList, orgId, snapshotName };
       const body = { methodType: constants.METHOD_TYPE_CREATE_SNAPSHOT, body: JSON.stringify(resBody) };
       http.post(flosumUrl, flosumToken, namespacePrefix, JSON.stringify(body))
         .then((res) => {
