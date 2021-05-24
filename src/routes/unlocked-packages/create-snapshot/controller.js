@@ -32,7 +32,6 @@ function createSnapshot(body, log) {
         .then(resolve)
         .catch((error) => {
           log.log('Error Create Snapshot');
-          log.log(error);
           helper.callUpdateInfo(sourceUrl.replace('https://', ''), sourceAccessToken, metadataLogId, namespacePrefix, logAttachmentId, false, log)
             .then(reject)
             .catch(reject);
