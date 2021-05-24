@@ -13,16 +13,16 @@ function call(command, log, options = {}, isCreateProject = false) {
               resolve(constants.PACKAGE_WITH_THIS_NAME_IS_EXIST);
             }
           }
-          log.log(`Error Call Child Process ${command}\n${e}\n${stdout}`);
+          log.log(`Error Call Child Process ${command.split('-u')[0]}\n${e}\n${stdout}`);
           reject(e);
         } else {
-          log.log(`End Call Child Process ${command}`);
+          log.log(`End Call Child Process ${command.split('-u')[0]}`);
           log.log(stdout);
           resolve(stdout);
         }
       }));
     } catch (e) {
-      log.log(`Error Call Child Process ${command}\n${e}`);
+      log.log(`Error Call Child Process ${command.split('-u')[0]}\n${e}`);
       reject(e);
     }
   });

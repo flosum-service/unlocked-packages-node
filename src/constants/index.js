@@ -107,8 +107,10 @@ function getSFDXRetrievePackage(accessToken, packageName) {
 const METADATA_FOLDER_TYPE_MAP = {
   ApexClass: 'classes',
   CustomObject: 'objects',
+  CustomField: 'objects',
   CustomTab: 'tabs',
-  LightningComponentBundle: 'lwc'
+  LightningComponentBundle: 'lwc',
+  AuraDefinitionBundle: 'aura'
 }
 
 module.exports = {
