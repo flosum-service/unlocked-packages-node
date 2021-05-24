@@ -1,7 +1,6 @@
 const debug = require('debug');
 
 function createLog(namespace) {
-  debug.enable('*');
   const log = debug(namespace);
   return {
     logs: [],

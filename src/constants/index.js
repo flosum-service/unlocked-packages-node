@@ -110,7 +110,8 @@ const METADATA_FOLDER_TYPE_MAP = {
   CustomField: 'objects',
   CustomTab: 'tabs',
   LightningComponentBundle: 'lwc',
-  AuraDefinitionBundle: 'aura'
+  AuraDefinitionBundle: 'aura',
+  ApexPage: 'pages'
 }
 
 module.exports = {
