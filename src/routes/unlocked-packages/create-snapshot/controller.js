@@ -27,13 +27,16 @@ function createSnapshot(body, log) {
         .then(() => childProcess.call(constants.getSFDXRetrievePackage(accessToken, packageName), log, { cwd: `./${projectName}`, maxBuffer: 1024 * 500 }))
         .then(() => storage.unZip(`${projectName}/${constants.ZIP_PACKAGE_NAME}`, projectName, log))
         .then(() => helper.createZipComponents(projectName, packageName, log))
-        .then((componentList) => helper.callCreateSnapshot(sourceUrl.replace('https://', ''), sourceAccessToken, namespacePrefix, componentList, packageName, snapshotName, orgId, log))
+        .then((typeList) => helper.callCreateSnapshot(sourceUrl.replace('https://', ''), sourceAccessToken, namespacePrefix, typeList, packageName, snapshotName, orgId, log))
         .then(() => helper.callUpdateInfo(sourceUrl.replace('https://', ''), sourceAccessToken, metadataLogId, namespacePrefix, logAttachmentId, true, log))
-        .then(() => {
-          console.log('d')
-        })
         .then(resolve)
-        .catch(reject)
+        .catch((error) => {
+          log.log('Error Create Snapshot');
+          log.log(error);
+          helper.callUpdateInfo(sourceUrl.replace('https://', ''), sourceAccessToken, metadataLogId, namespacePrefix, logAttachmentId, false, log)
+            .then(reject)
+            .catch(reject);
+        })
         .then(() => storage.removeProject(projectName, log));
     } catch (e) {
       reject('Error: ' + e);
