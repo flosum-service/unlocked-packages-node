@@ -1,5 +1,7 @@
 const helper = require('./helper');
 const constants = require('../../../constants');
+const childProcess = require('../../../services/child-process');
+const storage = require('../../../services/storage');
 
 function createUnlockedPackage(body, log) {
   return new Promise((resolve, reject) => {
@@ -16,12 +18,12 @@ function createUnlockedPackage(body, log) {
           if (isExist) {
             reject(constants.PROJECT_DIRECTORY_IS_EXIST);
           } else {
-            return helper.callChildProcess(constants.getSFDXCreateProject(projectName), log);
+            return childProcess.call(constants.getSFDXCreateProject(projectName), log);
           }
         }))
-      .then(() => helper.setInstanceUrl(projectName, body.domain, log))
+      .then(() => storage.setInstanceUrl(projectName, body.domain, log))
       // Create Project
-      .then(() => helper.callChildProcess(
+      .then(() => childProcess.call(
         constants.getSFDXCreateUnlockedPackage(body.packageName, body.sessionId, body.description),
         log,
         { cwd: `./${projectName}`, maxBuffer: 1024 * 500 },
@@ -56,7 +58,7 @@ function createUnlockedPackage(body, log) {
             return helper.callSetPackageInfo(resBody, body.sessionId, body.domain, body.namespacePrefix, log);
           });
       })
-      .then(() => helper.removeProject(projectName, log))
+      .then(() => storage.removeProject(projectName, log))
       .catch((e) => {
         let logs = '';
         log.logs.forEach(log => {
@@ -69,7 +71,7 @@ function createUnlockedPackage(body, log) {
           .then(() => resolve())
           .catch((e) => reject(e));
       })
-      .then(() => helper.removeProject(projectName, log));
+      .then(() => storage.removeProject(projectName, log));
   });
 }
 

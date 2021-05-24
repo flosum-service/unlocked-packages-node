@@ -1,36 +1,8 @@
 const fs = require('fs');
 const AdmZip = require('adm-zip');
 const convert = require('xml-js');
-const childProcess = require('child_process');
 const http = require('../../../services/http');
 const constants = require('../../../constants');
-
-function callChildProcess(command, log, options = {}, isCreateProject = false) {
-  return new Promise((resolve, reject) => {
-    try {
-      log.log(`Start Call Child Process ${command}`);
-      childProcess.exec(command, options, ((e, stdout, stderr) => {
-        if (e) {
-          if (isCreateProject) {
-            if (e.message.indexOf(constants.PACKAGE_NAME_MUST_BE_UNIQUE) > -1) {
-              log.log(constants.PACKAGE_WITH_THIS_NAME_IS_EXIST);
-              resolve(constants.PACKAGE_WITH_THIS_NAME_IS_EXIST);
-            }
-          }
-          log.log(`Error Call Child Process ${command}\n${e}\n${stderr}`);
-          reject(e.message);
-        } else {
-          log.log(`End Call Child Process ${command}`);
-          log.log(stdout);
-          resolve(stdout);
-        }
-      }));
-    } catch (e) {
-      log.log(`Error Call Child Process ${command}\n${e}`);
-      reject(e);
-    }
-  });
-}
 
 function checkProjectDirectory(projectName) {
   return new Promise((resolve, reject) => {
@@ -120,30 +92,6 @@ function b64toBuffer(b64Data, log) {
       resolve(buf);
     } catch (e) {
       log.log(e);
-      reject(e);
-    }
-  });
-}
-
-function setInstanceUrl(projectName, domain, log) {
-  return new Promise((resolve, reject) => {
-    try {
-      log.log('Start Set Instance Url');
-      const dir = `./${projectName}/.sfdx`;
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-      }
-      const sfdxConfig = `{ "instanceUrl": "https://${domain}" }`;
-      fs.writeFile(`${dir}/sfdx-config.json`, sfdxConfig, ((err) => {
-        if (err) {
-          log.log(`Error Set Instance Url\n${err}`);
-          reject(err);
-        }
-        log.log('End Set Instance Url');
-        resolve();
-      }));
-    } catch (e) {
-      log.log(`Error Set Instance Url\n${e}`);
       reject(e);
     }
   });
@@ -377,25 +325,6 @@ function unzipComponentList(componentList, projectName, sourceObjectName, log) {
   });
 }
 
-function removeProject(projectName, log) {
-  return new Promise((resolve, reject) => {
-    log.log('Start Remove Project');
-    try {
-      fs.rmdir(`./${projectName}`, { recursive: true }, (e) => {
-        if (e) {
-          log.log(`Error Remove Project${e}`);
-          reject(e);
-        }
-        log.log('End Remove Project');
-        resolve();
-      });
-    } catch (e) {
-      log.log(`Error Remove Project${e}`);
-      reject(e);
-    }
-  });
-}
-
 function getSFDXProject(projectName, log) {
   return new Promise((resolve, reject) => {
     try {
@@ -460,15 +389,12 @@ function callUpdateInfo(resBody, domain, sessionId, namespacePrefix, log) {
 
 module.exports = {
   checkProjectDirectory,
-  setInstanceUrl,
-  callChildProcess,
   callComponentList,
   convertToBuffer,
   unzipComponentList,
   generatePackageXML,
   getSFDXProject,
   getInstallationURL,
-  removeProject,
   addExistProjectToSFDXProject,
   mergeAttachmentAndComponents,
   callUpdateInfo,

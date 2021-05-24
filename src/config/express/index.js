@@ -5,6 +5,8 @@ const nocache = require('nocache');
 
 const defaultRouter = require('../../routes/default-route');
 const defaultRouterError = require('../../routes/default-route-error');
+const listInstalledPackages = require('../../routes/list-installed-packages');
+const listCreatedPackages = require('../../routes/list-created-packages');
 const unlockedPackagesRouter = require('../../routes/unlocked-packages');
 
 // Create Express server with pre-defined set of middleware
@@ -21,6 +23,8 @@ function configureExpress({ unlockedPackages }) {
    * with further request forwarding
    */
   app.use('/', defaultRouter);
+  app.use('/list-installed-packages', listInstalledPackages);
+  app.use('/list-created-packages', listCreatedPackages);
   app.use(unlockedPackages, unlockedPackagesRouter);
   app.use('/', defaultRouterError);
 
