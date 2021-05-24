@@ -25,12 +25,11 @@ router.post('/', (req, res) => {
   controller.createSnapshot(req.body, log)
     .then((result) => {
       log.log('Completed');
-      res.status(200).send(result);
     })
     .catch((e) => {
       log.log(`Error\n${e}`)
-      res.status(400).send(`Error\n${e}`);
     });
+  return res.status(200).send('The process of creating an snapshot from unlocked package has already begun.');
 });
 
 module.exports = router;

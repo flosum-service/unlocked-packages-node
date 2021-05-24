@@ -151,20 +151,20 @@ function createComponents(type) {
 function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, typeList, packageName, snapshotName, orgId, log) {
   return new Promise((resolve, reject) => {
     try {
-      log.log('*** Start Sent Components To Flosum');
+      log.log('*** Start Create Snapshot');
       const resBody = { packageName, typeList, orgId, snapshotName };
       const body = { methodType: constants.METHOD_TYPE_CREATE_SNAPSHOT, body: JSON.stringify(resBody) };
-      http.post(flosumUrl, flosumToken, namespacePrefix, JSON.stringify(body))
+      http.post(flosumUrl, flosumToken, namespacePrefix.replace('__', ''), JSON.stringify(body))
         .then((res) => {
-          log.log(`*** End Sent Components To Flosum`);
+          log.log(`*** End Create Snapshot`);
           resolve();
         })
         .catch((error) => {
-          log.log('*** Error Sent Components To Flosum');
+          log.log('*** Error Create Snapshot');
           reject(error);
         });
     } catch (e) {
-      log.log('*** Error Sent Components To Flosum');
+      log.log('*** Error Create Snapshot');
       reject(e);
     }
   });
