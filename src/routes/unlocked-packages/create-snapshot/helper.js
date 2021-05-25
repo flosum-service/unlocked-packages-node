@@ -8,20 +8,27 @@ function createZipComponents(projectPath, packageName, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('*** Start Create Zip Components');
+
       const packageXML = fs.readFileSync(`${projectPath}/${packageName}/package.xml`);
       const packageJSON = JSON.parse(parser.toJson(packageXML));
 
-      const typeList = [];
+      const packageTypeList = [];
 
       if (!Array.isArray(packageJSON.Package.types)) {
         packageJSON.Package.types = [packageJSON.Package.types];
       }
 
-      packageJSON.Package.types.forEach((type) => typeList.push(createComponents(type)));
+      packageJSON.Package.types.forEach((type) => packageTypeList.push(createComponents(type)));
 
-      typeList.forEach((type) => {
+      let count = 0;
+      let chunkCounter = 0;
+      let componentList = [];
+      let zip = new AdmZip();
+      let size = 0;
+      const chunkList = [{ typeList: [] }];
+      packageTypeList.forEach((type) => {
         const folderType = constants.METADATA_FOLDER_TYPE_MAP[type.type];
-        if (folderType) {
+        if (folderType && fs.existsSync(`${projectPath}/${packageName}/${folderType}`)) {
           const typePath = `${projectPath}/${packageName}/${folderType}`;
           const folderContentList = fs.readdirSync(
             typePath,
@@ -29,9 +36,9 @@ function createZipComponents(projectPath, packageName, log) {
           );
 
           if (type.type !== 'CustomField') {
-            folderContentList.forEach((content) => {
-              type.componentList.forEach((component) => {
-                if (content.name.includes(component.apiName)) {
+            type.componentList.forEach((component) => {
+              folderContentList.forEach((content) => {
+                if (content.name.split('.')[0] === component.apiName) {
                   component.fileList.push(content.name);
                   component.isDirectory = content.isDirectory();
                   if (!content.name.includes('-meta.xml')) {
@@ -41,24 +48,41 @@ function createZipComponents(projectPath, packageName, log) {
               });
             });
 
-            const zip = new AdmZip();
+
             type.componentList.forEach((component) => {
-              if (component.isDirectory) {
-                component.fileList.forEach((file) => zip.addLocalFolder(`${typePath}/${file}`, `${folderType}/${file}`));
-              } else {
-                component.fileList.forEach((file) => zip.addLocalFile(`${typePath}/${file}`, folderType));
-              }
+              componentList.push(component);
+              count++;
+              component.fileList.forEach((file) => {
+                size += fs.statSync(`${typePath}/${file}`).size;
+                if (component.isDirectory) {
+                  zip.addLocalFolder(`${typePath}/${file}`, `${folderType}/${file}`);
+                } else {
+                  zip.addLocalFile(`${typePath}/${file}`, folderType);
+                }
+
+                if (size > 1000000) {
+                  chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
+                  chunkList.push({ typeList: [] });
+                  zip = new AdmZip();
+                  size = 0;
+                  chunkCounter++;
+                  componentList = [];
+                }
+              });
               delete component.isDirectory;
               delete component.fileList;
             });
-            type.zip = zip.toBuffer().toString('base64');
+
+
           } else {
 
-            const customObjectSet = new Set();
+            const antiDuplicateFieldSet = new Set();
+            const prepareObjectList = [];
             folderContentList.forEach((content) => {
               type.componentList.forEach((component) => {
-                if (component.apiName.includes(content.name.split('.')[0])) {
-                  customObjectSet.add(content.name);
+                if (component.apiName.split('.')[0] === content.name.split('.')[0] && !antiDuplicateFieldSet.has(content.name)) {
+                  antiDuplicateFieldSet.add(content.name);
+                  prepareObjectList.push( { name : content.name, component });
                   component.label = `${folderType}/${content.name}`;
                   type.fileName = content.name;
                 }
@@ -67,24 +91,37 @@ function createZipComponents(projectPath, packageName, log) {
 
 
             const customObjectList = [];
-            customObjectSet.forEach((file) => {
-
+            prepareObjectList.forEach((content) => {
               customObjectList.push({
-                file: fs.readFileSync(`${typePath}/${file}`, 'utf8'),
-                fileName: file
+                file: fs.readFileSync(`${typePath}/${content.name}`, 'utf8'),
+                fileName: content.name,
+                component: content.component
               })
             });
             const customFieldList = convertToCustomField(customObjectList);
-            const zip = new AdmZip();
-            customFieldList.forEach((customField) =>
-              zip.addFile(`objects/${customField.fileName}`, Buffer.from(customField.file, 'utf-8'), '')
-            );
+            customFieldList.forEach((customField) => {
+              size += customField.file.length;
+              zip.addFile(`objects/${customField.fileName}`, Buffer.from(customField.file, 'utf-8'), '');
+              componentList.push(customField.component);
+              if (size > 1000000) {
+                chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
+                chunkList.push({ typeList: [] });
+                zip = new AdmZip();
+                size = 0;
+                chunkCounter++;
+                componentList = [];
+              }
+            });
             type.zip = zip.toBuffer().toString('base64');;
           }
+
+          chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
+          zip = new AdmZip();
+          componentList = [];
         }
       });
 
-      resolve(typeList);
+      resolve(chunkList);
       log.log('*** End Create Zip Components');
     } catch (e) {
       log.log('*** Error Create Zip Components');
@@ -122,7 +159,8 @@ function convertToCustomField(customObjectList) {
     });
     customFieldList.push({
       fileName: customObjectXML.fileName,
-      file: customFieldRows.join('\n')
+      file: customFieldRows.join('\n'),
+      component: customObjectXML.component
     });
   });
   return customFieldList;
@@ -148,23 +186,66 @@ function createComponents(type) {
   return { componentList, type: type.name };
 }
 
-function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, typeList, packageName, snapshotName, orgId, log) {
+function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, packageName, snapshotName, orgId, log) {
   return new Promise((resolve, reject) => {
     try {
-      log.log('*** Start Create Snapshot');
-      const resBody = { packageName, typeList, orgId, snapshotName };
+      log.log('*** Start Send Components');
+      let snapshotId = '';
+      let promiseChain = Promise.resolve();
+      for (let i = 0; i < chunkList.length; i++) {
+        if (i === 0) {
+          promiseChain = promiseChain
+            .then(() => callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, chunkList[i], packageName, snapshotName, orgId, log))
+            .then((res) => snapshotId = res);
+        } else {
+          promiseChain = promiseChain.then(() => callSentComponents(flosumUrl, flosumToken, namespacePrefix, chunkList[i], packageName, snapshotId, orgId, log));
+        }
+      }
+
+
+
+      promiseChain.then(() => {
+        log.log(`*** End Send Components`);
+        resolve();
+      })
+        .catch(reject);
+
+    } catch (e) {
+      log.log('*** Error Send Components');
+      reject(e);
+    }
+  });
+}
+
+function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, chunk, packageName, snapshotName, orgId, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      const resBody = { packageName, typeList: chunk.typeList, orgId, snapshotName };
       const body = { methodType: constants.METHOD_TYPE_CREATE_SNAPSHOT, body: JSON.stringify(resBody) };
       http.post(flosumUrl, flosumToken, namespacePrefix.replace('__', ''), JSON.stringify(body))
         .then((res) => {
-          log.log(`*** End Create Snapshot`);
-          resolve();
+          resolve(res.data)
         })
         .catch((error) => {
-          log.log('*** Error Create Snapshot');
           reject(error);
         });
     } catch (e) {
-      log.log('*** Error Create Snapshot');
+      reject(e);
+    }
+  });
+}
+
+function callSentComponents(flosumUrl, flosumToken, namespacePrefix, chunk, packageName, snapshotId, orgId, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      const resBody = { packageName, typeList: chunk.typeList, orgId, snapshotId };
+      const body = { methodType: constants.METHOD_TYPE_ADD_COMPONENTS_TO_SNAPSHOT, body: JSON.stringify(resBody) };
+      http.post(flosumUrl, flosumToken, namespacePrefix.replace('__', ''), JSON.stringify(body))
+        .then(() => {
+          resolve()
+        })
+        .catch(reject);
+    } catch (e) {
       reject(e);
     }
   });
@@ -202,6 +283,6 @@ function callUpdateInfo(flosumUrl, flosumToken, logId, nameSpacePrefix, attachme
 
 module.exports = {
   createZipComponents,
-  callCreateSnapshot,
+  sendComponents,
   callUpdateInfo
 }
