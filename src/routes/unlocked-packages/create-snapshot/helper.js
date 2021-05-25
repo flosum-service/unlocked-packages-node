@@ -81,7 +81,7 @@ function createZipComponents(projectPath, packageName, log) {
             folderContentList.forEach((content) => {
               type.componentList.forEach((component) => {
                 if (component.apiName.split('.')[0] === content.name.split('.')[0] && !antiDuplicateFieldSet.has(content.name)) {
-                  antiDuplicateFieldSet.add(content.name);
+                  antiDuplicateFieldSet.add(component.apiName);
                   prepareObjectList.push( { name : content.name, component });
                   component.label = `${folderType}/${content.name}`;
                   type.fileName = content.name;
