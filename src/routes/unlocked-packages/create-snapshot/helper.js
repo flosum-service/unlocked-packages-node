@@ -7,7 +7,7 @@ const http = require('../../../services/http');
 function createZipComponents(projectPath, packageName, log) {
   return new Promise((resolve, reject) => {
     try {
-      log.log('*** Start Create Zip Components');
+      log.log('Start Create Zip Components');
 
       const packageXML = fs.readFileSync(`${projectPath}/${packageName}/package.xml`);
       const packageJSON = JSON.parse(parser.toJson(packageXML));
@@ -60,7 +60,7 @@ function createZipComponents(projectPath, packageName, log) {
                   zip.addLocalFile(`${typePath}/${file}`, folderType);
                 }
 
-                if (size > 1000000) {
+                if (size > constants.MAX_SIZE_UNZIP_ATTACHMENT) {
                   chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
                   chunkList.push({ typeList: [] });
                   zip = new AdmZip();
@@ -80,30 +80,32 @@ function createZipComponents(projectPath, packageName, log) {
             const prepareObjectList = [];
             folderContentList.forEach((content) => {
               type.componentList.forEach((component) => {
-                if (component.apiName.split('.')[0] === content.name.split('.')[0] && !antiDuplicateFieldSet.has(content.name)) {
-                  antiDuplicateFieldSet.add(component.apiName);
+                if (component.apiName.split('.')[0] === content.name.split('.')[0]) {
                   prepareObjectList.push( { name : content.name, component });
                   component.label = `${folderType}/${content.name}`;
                   type.fileName = content.name;
+                  componentList.push(component);
                 }
               });
             });
 
-
             const customObjectList = [];
             prepareObjectList.forEach((content) => {
-              customObjectList.push({
-                file: fs.readFileSync(`${typePath}/${content.name}`, 'utf8'),
-                fileName: content.name,
-                component: content.component
-              })
+              if (!antiDuplicateFieldSet.has(content.name)) {
+                customObjectList.push({
+                  file: fs.readFileSync(`${typePath}/${content.name}`, 'utf8'),
+                  fileName: content.name,
+                  component: content.component
+                });
+                antiDuplicateFieldSet.add(content.name);
+              }
             });
+
             const customFieldList = convertToCustomField(customObjectList);
             customFieldList.forEach((customField) => {
               size += customField.file.length;
               zip.addFile(`objects/${customField.fileName}`, Buffer.from(customField.file, 'utf-8'), '');
-              componentList.push(customField.component);
-              if (size > 1000000) {
+              if (size > constants.MAX_SIZE_UNZIP_ATTACHMENT) {
                 chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
                 chunkList.push({ typeList: [] });
                 zip = new AdmZip();
@@ -112,7 +114,7 @@ function createZipComponents(projectPath, packageName, log) {
                 componentList = [];
               }
             });
-            type.zip = zip.toBuffer().toString('base64');;
+            type.zip = zip.toBuffer().toString('base64');
           }
 
           chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
@@ -122,9 +124,9 @@ function createZipComponents(projectPath, packageName, log) {
       });
 
       resolve(chunkList);
-      log.log('*** End Create Zip Components');
+      log.log('End Create Zip Components');
     } catch (e) {
-      log.log('*** Error Create Zip Components');
+      log.log('Error Create Zip Components');
       reject(e);
     }
   });
@@ -189,7 +191,7 @@ function createComponents(type) {
 function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, packageName, snapshotName, orgId, log) {
   return new Promise((resolve, reject) => {
     try {
-      log.log('*** Start Send Components');
+      log.log('Start Send Components');
       let snapshotId = '';
       let promiseChain = Promise.resolve();
       for (let i = 0; i < chunkList.length; i++) {
@@ -202,16 +204,14 @@ function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, pack
         }
       }
 
-
-
       promiseChain.then(() => {
-        log.log(`*** End Send Components`);
+        log.log(`End Send Components`);
         resolve();
       })
         .catch(reject);
 
     } catch (e) {
-      log.log('*** Error Send Components');
+      log.log('Error Send Components');
       reject(e);
     }
   });
