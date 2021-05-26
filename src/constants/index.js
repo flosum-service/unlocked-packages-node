@@ -27,6 +27,7 @@ const PACKAGE_INSTALLATION_URL_NOT_FOUND = 'Package installation URL not found.'
 const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
 const SOURCE_OBJECT_BRANCH = 'Component__c';
 const ZIP_PACKAGE_NAME = 'unpackaged.zip';
+const MAX_SIZE_UNZIP_ATTACHMENT = '5000000';
 
 const SFDX_PROJECT_EXAMPLE = '{\n' +
   '  "packageDirectories": [\n' +
@@ -281,6 +282,7 @@ module.exports = {
   OBJECT_DATA,
   SFDX_PROJECT_EXAMPLE,
   ZIP_PACKAGE_NAME,
+  MAX_SIZE_UNZIP_ATTACHMENT,
   getSFDXCreateProject,
   getSFDXConvertMetadata,
   getSFDXCreateUnlockedPackage,
