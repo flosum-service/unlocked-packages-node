@@ -62,7 +62,7 @@ function callComponentList(domain, sessionId, attachmentIdList, attachmentsCount
         log.log(`Component List Length, ${data.recordList.length}`);
         componentsWithAttachmentList.push(...data.recordList);
         if (data.idList && data.idList.length) {
-          callComponentList(domain, sessionId, data.idList, attachmentsCount, log, componentsWithAttachmentList)
+          callComponentList(domain, sessionId, data.idList, attachmentsCount, namespacePrefix, log, componentsWithAttachmentList)
             .then((result) => resolve(result))
             .catch((e) => {
               reject(e);
