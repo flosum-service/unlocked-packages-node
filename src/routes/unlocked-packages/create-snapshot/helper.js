@@ -9,7 +9,7 @@ function createZipComponents(projectPath, packageName, log) {
     try {
       log.log('Start Create Zip Components');
 
-      const packageXML = fs.readFileSync(`${projectPath}/${packageName}/packageR.xml`);
+      const packageXML = fs.readFileSync(`${projectPath}/${packageName}/package.xml`);
       const packageJSON = JSON.parse(parser.toJson(packageXML));
 
       const packageTypeList = [];

@@ -173,7 +173,10 @@ class MetadataTypeParser {
     const typePath = `${this.projectPath}/${this.packageName}/${folderType}`;
     type.componentList.forEach((component) => {
       folderContentList.forEach((content) => {
-        if (path.parse(content.name).name === component.apiName) {
+        const pp = path.parse(content.name)
+        if (path.parse(content.name).name === component.apiName
+          || path.parse(content.name).name === component.apiName + '.cls-meta'
+        ) {
           component.fileList.push(content.name);
           component.isDirectory = content.isDirectory();
           if (!content.name.includes('-meta.xml')) {
