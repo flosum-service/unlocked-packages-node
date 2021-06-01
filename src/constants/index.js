@@ -27,7 +27,7 @@ const PACKAGE_INSTALLATION_URL_NOT_FOUND = 'Package installation URL not found.'
 const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
 const SOURCE_OBJECT_BRANCH = 'Component__c';
 const ZIP_PACKAGE_NAME = 'unpackaged.zip';
-const MAX_SIZE_UNZIP_ATTACHMENT = '5000000';
+const MAX_SIZE_UNZIP_ATTACHMENT = 3000000;
 
 const SFDX_PROJECT_EXAMPLE = '{\n' +
   '  "packageDirectories": [\n' +
@@ -107,6 +107,8 @@ function getSFDXRetrievePackage(accessToken, packageName) {
 }
 
 const METADATA_FOLDER_TYPE_MAP = {
+  // "CustomLabels": "labels", In filter set
+
   "AutoResponseRules": "autoResponseRules",
   "AutoResponseRule": "autoResponseRules",
   "ModerationRule": "moderation",
@@ -134,11 +136,11 @@ const METADATA_FOLDER_TYPE_MAP = {
   "CustomObject": "objects",
   "SharingRule": "sharingRules",
   "CustomField": "objects",
-  // "FieldSet": "fieldSets", TODO from custom objects
-  // "RecordType": "recordTypes", TODO from custom objects
-  "ValidationRule": "validationRules",
-  // "WebLink": "weblinks", TODO  from custom objects
-  // "ListView": "listViews", TODO  from custom objects
+  "FieldSet": "objects",
+  "RecordType": "objects",
+  "ValidationRule": "objects",
+  "WebLink": "objects",
+  "ListView": "objects",
   "ApexPage": "pages",
   "PermissionSet": "permissionsets",
   "PermissionSetGroup": "permissionsetgroups",
@@ -158,14 +160,14 @@ const METADATA_FOLDER_TYPE_MAP = {
   "AppMenu": "appMenus",
   "ApprovalProcess": "approvalProcesses",
   "AuthProvider": "authproviders",
-  "BusinessProcess": "businessProcesses",
+  "BusinessProcess": "objects",
   "BrandingSet": "brandingSets",
   "CallCenter": "callCenters",
   "Certificate": "certs",
   "ChannelLayout": "channelLayouts",
   "CleanDataService": "cleanDataServices",
   "Community": "communities",
-  // "CompactLayout": "compactLayouts", TODO  from custom objects
+  "CompactLayout": "objects",
   "ConnectedApp": "connectedApps",
   "ContentAsset": "contentassets",
   "CorsWhitelistOrigin": "corsWhitelistOrigins",

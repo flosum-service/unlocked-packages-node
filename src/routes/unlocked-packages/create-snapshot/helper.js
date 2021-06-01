@@ -1,15 +1,15 @@
 const fs = require('fs');
 const constants = require('../../../constants');
 const parser = require('xml2json');
-const AdmZip = require('adm-zip');
 const http = require('../../../services/http');
+const { MetadataTypeParser } = require('./metadataTypeParser');
 
 function createZipComponents(projectPath, packageName, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Create Zip Components');
 
-      const packageXML = fs.readFileSync(`${projectPath}/${packageName}/package.xml`);
+      const packageXML = fs.readFileSync(`${projectPath}/${packageName}/packageR.xml`);
       const packageJSON = JSON.parse(parser.toJson(packageXML));
 
       const packageTypeList = [];
@@ -20,108 +20,8 @@ function createZipComponents(projectPath, packageName, log) {
 
       packageJSON.Package.types.forEach((type) => packageTypeList.push(createComponents(type)));
 
-      let count = 0;
-      let chunkCounter = 0;
-      let componentList = [];
-      let zip = new AdmZip();
-      let size = 0;
-      const chunkList = [{ typeList: [] }];
-      packageTypeList.forEach((type) => {
-        const folderType = constants.METADATA_FOLDER_TYPE_MAP[type.type];
-        if (folderType && fs.existsSync(`${projectPath}/${packageName}/${folderType}`)) {
-          const typePath = `${projectPath}/${packageName}/${folderType}`;
-          const folderContentList = fs.readdirSync(
-            typePath,
-            { withFileTypes: true }
-          );
-
-          if (type.type !== 'CustomField') {
-            type.componentList.forEach((component) => {
-              folderContentList.forEach((content) => {
-                if (content.name.split('.')[0] === component.apiName) {
-                  component.fileList.push(content.name);
-                  component.isDirectory = content.isDirectory();
-                  if (!content.name.includes('-meta.xml')) {
-                    component.label = `${folderType}/${content.name}`;
-                  }
-                }
-              });
-            });
-
-
-            type.componentList.forEach((component) => {
-              componentList.push(component);
-              count++;
-              component.fileList.forEach((file) => {
-                size += fs.statSync(`${typePath}/${file}`).size;
-                if (component.isDirectory) {
-                  zip.addLocalFolder(`${typePath}/${file}`, `${folderType}/${file}`);
-                } else {
-                  zip.addLocalFile(`${typePath}/${file}`, folderType);
-                }
-
-                if (size > constants.MAX_SIZE_UNZIP_ATTACHMENT) {
-                  chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
-                  chunkList.push({ typeList: [] });
-                  zip = new AdmZip();
-                  size = 0;
-                  chunkCounter++;
-                  componentList = [];
-                }
-              });
-              delete component.isDirectory;
-              delete component.fileList;
-            });
-
-
-          } else {
-
-            const antiDuplicateFieldSet = new Set();
-            const prepareObjectList = [];
-            folderContentList.forEach((content) => {
-              type.componentList.forEach((component) => {
-                if (component.apiName.split('.')[0] === content.name.split('.')[0]) {
-                  prepareObjectList.push( { name : content.name, component });
-                  component.label = `${folderType}/${content.name}`;
-                  type.fileName = content.name;
-                  componentList.push(component);
-                }
-              });
-            });
-
-            const customObjectList = [];
-            prepareObjectList.forEach((content) => {
-              if (!antiDuplicateFieldSet.has(content.name)) {
-                customObjectList.push({
-                  file: fs.readFileSync(`${typePath}/${content.name}`, 'utf8'),
-                  fileName: content.name,
-                  component: content.component
-                });
-                antiDuplicateFieldSet.add(content.name);
-              }
-            });
-
-            const customFieldList = convertToCustomField(customObjectList);
-            customFieldList.forEach((customField) => {
-              size += customField.file.length;
-              zip.addFile(`objects/${customField.fileName}`, Buffer.from(customField.file, 'utf-8'), '');
-              if (size > constants.MAX_SIZE_UNZIP_ATTACHMENT) {
-                chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
-                chunkList.push({ typeList: [] });
-                zip = new AdmZip();
-                size = 0;
-                chunkCounter++;
-                componentList = [];
-              }
-            });
-            type.zip = zip.toBuffer().toString('base64');
-          }
-
-          chunkList[chunkCounter].typeList.push({ componentList, type: type.type, zip :  zip.toBuffer().toString('base64'), size });
-          zip = new AdmZip();
-          componentList = [];
-        }
-      });
+      const metadataTypeParser = new MetadataTypeParser(packageTypeList, projectPath, packageName, log);
+      const chunkList = metadataTypeParser.parseMetadata(log);
 
       resolve(chunkList);
       log.log('End Create Zip Components');
@@ -130,42 +30,6 @@ function createZipComponents(projectPath, packageName, log) {
       reject(e);
     }
   });
-}
-
-function convertToCustomField(customObjectList) {
-  const customFieldList = [];
-  customObjectList.forEach((customObjectXML) => {
-    const customFieldRows = [];
-    const rows = customObjectXML.file.split('\n');
-    let start = false;
-    rows.forEach((row) => {
-
-      if (
-        row.includes('<?xml version="1.0" encoding="UTF-8"?>') ||
-        row.startsWith('<CustomObject') ||
-        row.startsWith('</CustomObject')
-      ) {
-        customFieldRows.push(row);
-      }
-      if (row.includes('<fields>')) {
-        start = true;
-      }
-      if (start) {
-        customFieldRows.push(row);
-      }
-
-      if (row.includes('</fields>')) {
-        start = false;
-      }
-
-    });
-    customFieldList.push({
-      fileName: customObjectXML.fileName,
-      file: customFieldRows.join('\n'),
-      component: customObjectXML.component
-    });
-  });
-  return customFieldList;
 }
 
 function createComponents(type) {
@@ -224,7 +88,11 @@ function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, chunk, pack
       const body = { methodType: constants.METHOD_TYPE_CREATE_SNAPSHOT, body: JSON.stringify(resBody) };
       http.post(flosumUrl, flosumToken, namespacePrefix.replace('__', ''), JSON.stringify(body))
         .then((res) => {
-          resolve(res.data)
+          resolve(res.data);
+          if (res.data === 'Wrong method type') {
+            log.log('You have an old version of the Flosum package, please update.');
+            reject();
+          }
         })
         .catch((error) => {
           reject(error);
