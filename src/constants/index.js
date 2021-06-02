@@ -28,6 +28,7 @@ const SOURCE_OBJECT_DEPLOYMENT = 'Patch_Manifest__c';
 const SOURCE_OBJECT_BRANCH = 'Component__c';
 const ZIP_PACKAGE_NAME = 'unpackaged.zip';
 const MAX_SIZE_UNZIP_ATTACHMENT = 3000000;
+const QUERY_INSTALLED_PACKAGE_LIST = 'SELECT+SubscriberPackage.Name,+SubscriberPackageVersion.Package2ContainerOptions+FROM+InstalledSubscriberPackage';
 
 const SFDX_PROJECT_EXAMPLE = '{\n' +
   '  "packageDirectories": [\n' +
@@ -285,6 +286,7 @@ module.exports = {
   SFDX_PROJECT_EXAMPLE,
   ZIP_PACKAGE_NAME,
   MAX_SIZE_UNZIP_ATTACHMENT,
+  QUERY_INSTALLED_PACKAGE_LIST,
   getSFDXCreateProject,
   getSFDXConvertMetadata,
   getSFDXCreateUnlockedPackage,
