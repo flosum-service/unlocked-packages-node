@@ -2,6 +2,7 @@ const helper = require('./helper');
 const constants = require('../../constants');
 const childProcess = require('../../services/child-process');
 const storage = require('../../services/storage');
+const http = require('../../services/http');
 
 function getInstalledPackageList(body, log) {
   return new Promise((resolve, reject) => {
@@ -14,7 +15,8 @@ function getInstalledPackageList(body, log) {
         .then(() => storage.createProjectDirectory(projectName, log))
         .then(() => storage.createSFDXProjectJSON(projectName, log))
         .then(() => storage.setInstanceUrl(projectName, instanceUrl.replace('https://', ''), log))
-        .then(() => childProcess.call(constants.getSFDXInstalledPackageList(accessToken), log, { cwd: `./${projectName}`, maxBuffer: 1024 * 500 }))
+        .then(() => http.callToolingAPIRequest(instanceUrl, accessToken, constants.QUERY_INSTALLED_PACKAGE_LIST, log))
+        .then((packageList) => helper.parseInstalledUnlockedPackageList(packageList, log))
         .then(resolve)
         .catch(reject)
         .then(() => storage.removeProject(projectName, log));
