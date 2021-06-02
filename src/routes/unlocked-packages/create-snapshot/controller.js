@@ -27,7 +27,7 @@ function createSnapshot(body, log) {
         .then(() => childProcess.call(constants.getSFDXRetrievePackage(accessToken, packageName), log, { cwd: `./${projectName}`, maxBuffer: 1024 * 500 }))
         .then(() => storage.unZip(`${projectName}/${constants.ZIP_PACKAGE_NAME}`, projectName, log))
         .then(() => helper.createZipComponents(projectName, packageName, log))
-        .then((typeList) => helper.sendComponents(sourceUrl.replace('https://', ''), sourceAccessToken, namespacePrefix, typeList, packageName, snapshotName, orgId, log))
+        .then((typeList) => helper.sendComponents(sourceUrl.replace('https://', ''), sourceAccessToken, namespacePrefix, typeList, packageName, snapshotName, orgId, metadataLogId, log))
         .then(() => helper.callUpdateInfo(sourceUrl.replace('https://', ''), sourceAccessToken, metadataLogId, namespacePrefix, logAttachmentId, true, log))
         .then(resolve)
         .catch((error) => {
