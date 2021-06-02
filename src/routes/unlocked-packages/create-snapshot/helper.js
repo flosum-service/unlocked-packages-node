@@ -52,7 +52,7 @@ function createComponents(type) {
   return { componentList, type: type.name };
 }
 
-function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, packageName, snapshotName, orgId, log) {
+function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, packageName, snapshotName, orgId, metadataLogId, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Send Components');
@@ -61,7 +61,7 @@ function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, pack
       for (let i = 0; i < chunkList.length; i++) {
         if (i === 0) {
           promiseChain = promiseChain
-            .then(() => callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, chunkList[i], packageName, snapshotName, orgId, log))
+            .then(() => callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, chunkList[i], packageName, snapshotName, orgId, metadataLogId, log))
             .then((res) => snapshotId = res);
         } else {
           promiseChain = promiseChain.then(() => callSentComponents(flosumUrl, flosumToken, namespacePrefix, chunkList[i], packageName, snapshotId, orgId, log));
@@ -81,10 +81,10 @@ function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, pack
   });
 }
 
-function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, chunk, packageName, snapshotName, orgId, log) {
+function callCreateSnapshot(flosumUrl, flosumToken, namespacePrefix, chunk, packageName, snapshotName, orgId, metadataLogId, log) {
   return new Promise((resolve, reject) => {
     try {
-      const resBody = { packageName, typeList: chunk.typeList, orgId, snapshotName };
+      const resBody = { packageName, typeList: chunk.typeList, orgId, snapshotName, metadataLogId };
       const body = { methodType: constants.METHOD_TYPE_CREATE_SNAPSHOT, body: JSON.stringify(resBody) };
       http.post(flosumUrl, flosumToken, namespacePrefix.replace('__', ''), JSON.stringify(body))
         .then((res) => {
