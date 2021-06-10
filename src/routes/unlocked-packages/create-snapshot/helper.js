@@ -2,13 +2,14 @@ const fs = require('fs');
 const constants = require('../../../constants');
 const parser = require('xml2json');
 const http = require('../../../services/http');
+const childProcess = require('../../../services/child-process');
 const { MetadataTypeParser } = require('./metadataTypeParser');
 
-function createZipComponents(projectPath, packageName, log) {
+
+function getComponentTypesFromPackageXML(projectPath, packageName, log) {
   return new Promise((resolve, reject) => {
     try {
-      log.log('Start Create Zip Components');
-
+      log.log('Start Get Component Types From PackageXML');
       const packageXML = fs.readFileSync(`${projectPath}/${packageName}/package.xml`);
       const packageJSON = JSON.parse(parser.toJson(packageXML));
 
@@ -20,9 +21,86 @@ function createZipComponents(projectPath, packageName, log) {
 
       packageJSON.Package.types.forEach((type) => packageTypeList.push(createComponents(type)));
 
+      log.log('Count Of Component Types: ' + packageTypeList.length);
+      resolve(packageTypeList);
+      log.log('End Get Component Types From PackageXML');
+    } catch (e) {
+      log.log('Error Get Component Types From PackageXML ' + e);
+      reject(e);
+    }
+  });
+}
+
+function getMetadataInfo(accessToken, projectName, packageTypeList, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start Get Metadata Info');
+      const metadataInfoMap = {};
+      let promiseChain = Promise.resolve();
+      packageTypeList.forEach((componentType) => {
+        promiseChain = promiseChain
+          .then(() => childProcess.call(
+            constants.getSFDXMetadataInfo(componentType.type, accessToken),
+            log,
+            { cwd: `./${projectName}`, maxBuffer: 1024 * 8000 },
+            false,
+            false
+            ))
+          .then((metadataInfo) => {
+            log.log('Received Metadata Info, ' + componentType.type);
+            metadataInfoMap[componentType.type] = JSON.parse(metadataInfo)
+          });
+      });
+
+      promiseChain
+        .then(() => {
+          log.log('End Get Metadata Info');
+          resolve({ metadataInfoMap, packageTypeList });
+        })
+        .catch((e) => {
+          log.log('Start Get Metadata Info ' + e);
+          reject(e);
+        });
+    } catch (e) {
+      log.log('Start Get Metadata Info ' + e);
+      reject(e);
+    }
+  });
+}
+
+function mergeComponentsWithMetadataInfo(metadataInfoMap, packageTypeList, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start Merge Components With MetadataInfo');
+      packageTypeList.forEach((componentType) => {
+        const metadataInfoType = metadataInfoMap[componentType.type];
+        if (metadataInfoType && metadataInfoType.result && metadataInfoType.result.length) {
+          componentType.componentList.forEach((component) => {
+            const metadataInfo = metadataInfoType.result.find((metadataInfo) => metadataInfo.fullName === component.apiName);
+            if (metadataInfo) {
+              component.lastModifiedDate = metadataInfo.lastModifiedDate;
+              component.lastModifiedBy = metadataInfo.lastModifiedByName;
+            }
+          });
+        }
+      });
+
+      resolve(packageTypeList);
+      log.log('End Merge Components With MetadataInfo');
+    } catch (e) {
+      log.log('Error Merge Components With MetadataInfo ' + e);
+      reject(e);
+    }
+  });
+}
+
+function createZipComponents(projectPath, packageName, packageTypeList, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start Create Zip Components');
+
       const metadataTypeParser = new MetadataTypeParser(packageTypeList, projectPath, packageName, log);
       const chunkList = metadataTypeParser.parseMetadata(log);
-
       resolve(chunkList);
       log.log('End Create Zip Components');
     } catch (e) {
@@ -150,6 +228,9 @@ function callUpdateInfo(flosumUrl, flosumToken, logId, nameSpacePrefix, attachme
 }
 
 module.exports = {
+  getComponentTypesFromPackageXML,
+  getMetadataInfo,
+  mergeComponentsWithMetadataInfo,
   createZipComponents,
   sendComponents,
   callUpdateInfo

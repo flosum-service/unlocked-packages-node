@@ -6,6 +6,7 @@ const nocache = require('nocache');
 const defaultRouter = require('../../routes/default-route');
 const defaultRouterError = require('../../routes/default-route-error');
 const listInstalledUnlockedPackages = require('../../routes/list-installed-unlocked-packages');
+const listInstalledPackages = require('../../routes/list-installed-packages');
 const listCreatedPackages = require('../../routes/list-created-packages');
 const unlockedPackagesRouter = require('../../routes/unlocked-packages');
 
@@ -23,6 +24,7 @@ function configureExpress({ unlockedPackages }) {
    * with further request forwarding
    */
   app.use('/', defaultRouter);
+  app.use('/list-installed-packages', listInstalledPackages);
   app.use('/list-installed-unlocked-packages', listInstalledUnlockedPackages);
   app.use('/list-created-packages', listCreatedPackages);
   app.use(unlockedPackages, unlockedPackagesRouter);

@@ -10,7 +10,7 @@ const router = new Router();
 // Settings up request unique id to headers
 router.use((req, res, next) => {
   if (!req.headers['x-request-id']) {
-    req.headers['x-request-id'] = uuidv4();
+    req.headers['x-request-id'] = Math.random().toString(16).slice(2);
   }
   next();
 });
