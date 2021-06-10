@@ -1,7 +1,7 @@
 const childProcess = require('child_process');
 const constants = require('../../constants');
 
-function call(command, log, options = {}, isCreateProject = false) {
+function call(command, log, options = {}, isCreateProject = false, isShowLogs = true) {
   return new Promise((resolve, reject) => {
     try {
       log.log(`Start Call Child Process ${command.split('-u')[0]}`);
@@ -17,7 +17,9 @@ function call(command, log, options = {}, isCreateProject = false) {
           reject(e);
         } else {
           log.log(`End Call Child Process ${command.split('-u')[0]}`);
-          log.log(stdout);
+          if (isShowLogs) {
+            log.log(stdout);
+          }
           resolve(stdout);
         }
       }));

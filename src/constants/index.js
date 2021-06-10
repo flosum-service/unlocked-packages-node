@@ -16,6 +16,7 @@ const DEV_NODE_ENV = 'development';
 const START_CREATE_UNLOCKED_PACKAGE = 'Start Create Unlocked Package';
 const START_UPDATE_UNLOCKED_PACKAGE = 'Start Update Unlocked Package';
 const START_LIST_INSTALLED_PACKAGES = 'Start List Installed packages';
+const START_LIST_UNLOCKED_INSTALLED_PACKAGES = 'Start List Installed Unlocked packages';
 const START_LIST_CREATED_PACKAGES = 'Start Created Installed packages';
 const START_CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE = 'Start Create Snapshot From Unlocked Package';
 const ATTACHMENTS_DELETED = 'The definition of some of these components may have been removed.';
@@ -105,6 +106,10 @@ function getSFDXCreatedPackageList(accessToken) {
 
 function getSFDXRetrievePackage(accessToken, packageName) {
   return `sfdx force:mdapi:retrieve -p "${packageName}" -r ./ -u "${accessToken}"`;
+}
+
+function getSFDXMetadataInfo(componentType, accessToken) {
+  return `sfdx force:mdapi:listmetadata -m "${componentType}" -u "${accessToken}" --json`;
 }
 
 const METADATA_FOLDER_TYPE_MAP = {
@@ -267,6 +272,7 @@ module.exports = {
   START_CREATE_UNLOCKED_PACKAGE,
   START_UPDATE_UNLOCKED_PACKAGE,
   START_LIST_INSTALLED_PACKAGES,
+  START_LIST_UNLOCKED_INSTALLED_PACKAGES,
   START_LIST_CREATED_PACKAGES,
   START_CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE,
   ATTACHMENTS_DELETED,
@@ -294,5 +300,6 @@ module.exports = {
   getSFDXInstalledPackageList,
   getSFDXCreatedPackageList,
   getSFDXRetrievePackage,
+  getSFDXMetadataInfo,
   METADATA_FOLDER_TYPE_MAP
 };
