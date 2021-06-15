@@ -101,10 +101,11 @@ function createZipComponents(projectPath, packageName, packageTypeList, log) {
 
       const metadataTypeParser = new MetadataTypeParser(packageTypeList, projectPath, packageName, log);
       const chunkList = metadataTypeParser.parseMetadata(log);
+
       resolve(chunkList);
       log.log('End Create Zip Components');
     } catch (e) {
-      log.log('Error Create Zip Components');
+      log.log('Error Create Zip Components ' + e);
       reject(e);
     }
   });
@@ -150,10 +151,13 @@ function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, pack
         log.log(`End Send Components`);
         resolve();
       })
-        .catch(reject);
+        .catch((e) => {
+          log.log('Error Send Components ' + e);
+          reject(e);
+        });
 
     } catch (e) {
-      log.log('Error Send Components');
+      log.log('Error Send Components ' + e);
       reject(e);
     }
   });
