@@ -18,17 +18,28 @@ function createSnapshot(body, log) {
       const logAttachmentId = body.logAttachmentId;
       const snapshotName = body.snapshotName;
       const orgId = body.orgId;
+      let dependencyList;
+
+      if (body.dependencyList) {
+        try {
+          dependencyList = JSON.parse(body.dependencyList);
+        } catch (e) {
+          log.log('Error while get dependencies ' + e);
+        }
+      } else {
+        dependencyList = [];
+      }
 
       Promise.resolve()
         .then(() => storage.createProjectDirectory(projectName, log))
         .then(() => storage.createSFDXProjectJSON(projectName, log))
         .then(() => storage.setInstanceUrl(projectName, instanceUrl.replace('https://', ''), log))
-        .then(() => childProcess.call(constants.getSFDXRetrievePackage(accessToken, packageName), log, { cwd: `./${projectName}`, maxBuffer: 1024 * 500 }))
-        .then(() => storage.unZip(`${projectName}/${constants.ZIP_PACKAGE_NAME}`, projectName, log))
-        .then(() => helper.getComponentTypesFromPackageXML(projectName, packageName, log))
-        .then((packageTypeList) => helper.getMetadataInfo(accessToken, projectName, packageTypeList, log))
-        .then((result) => helper.mergeComponentsWithMetadataInfo(result.metadataInfoMap, result.packageTypeList, log))
-        .then((packageTypeList) => helper.createZipComponents(projectName, packageName,packageTypeList, log))
+        .then(() => helper.retrievePackages(accessToken, projectName, packageName, dependencyList, log))
+        .then(() => helper.unzipPackages(projectName, packageName, dependencyList, log))
+        .then(() => helper.getComponentTypesFromPackageXML(projectName, packageName, dependencyList, log))
+        .then((packageMap) => helper.getMetadataInfo(accessToken, projectName, packageMap, log))
+        .then((result) => helper.mergeComponentsWithMetadataInfo(result.metadataInfoMap, result.packageMap, log))
+        .then((packageMap) => helper.createZipComponents(projectName, packageName, dependencyList, packageMap, log))
         .then((typeList) => helper.sendComponents(sourceUrl.replace('https://', ''), sourceAccessToken, namespacePrefix, typeList, packageName, snapshotName, orgId, metadataLogId, log))
         .then(() => helper.callUpdateInfo(sourceUrl.replace('https://', ''), sourceAccessToken, metadataLogId, namespacePrefix, logAttachmentId, true, log))
         .then(resolve)

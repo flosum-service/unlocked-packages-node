@@ -3,27 +3,116 @@ const constants = require('../../../constants');
 const parser = require('xml2json');
 const http = require('../../../services/http');
 const childProcess = require('../../../services/child-process');
+const storage = require('../../../services/storage');
 const { MetadataTypeParser } = require('./metadataTypeParser');
 
+function retrievePackages(accessToken, projectName, packageName, dependencyList, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start Retrieve Packages');
+      try {
+        fs.mkdirSync(`./${projectName}/${packageName}`);
+      } catch (e) {
+        log.log('Error Create Package Directory ' + e);
+        reject(e);
+      }
+      let promiseChain = Promise.resolve();
+      promiseChain = promiseChain
+        .then(() => {
+          log.log('Start Retrieve Package ' + packageName);
+          return childProcess.call(
+            constants.getSFDXRetrievePackage(accessToken, packageName),
+            log,
+            { cwd: `./${projectName}/${packageName}`,
+              maxBuffer: 1024 * 500
+            })
+        })
+        .then(() => log.log('End Retrieve Package ' + packageName));
 
-function getComponentTypesFromPackageXML(projectPath, packageName, log) {
+      if (dependencyList && dependencyList.length) {
+        dependencyList.forEach((dependencyPackageName) => {
+          promiseChain = promiseChain
+            .then(() => retrievePackages(accessToken, projectName, dependencyPackageName, null, log))
+        });
+      }
+
+      promiseChain
+        .then(() => {
+          log.log('End Retrieve Packages');
+          resolve();
+        })
+        .catch((e) => {
+          log.log('Error Retrieve Packages ' + e);
+          reject(e);
+        });
+
+    } catch (e) {
+      log.log('Error Retrieve Packages ' + e);
+      reject(e);
+    }
+  });
+}
+
+function unzipPackages(projectName, packageName, dependencyList, log) {
+  return new Promise((resolve, reject) => {
+    try {
+      log.log('Start Unzip Packages');
+
+      let promiseChain = Promise.resolve();
+      promiseChain = promiseChain
+        .then(() => {
+          log.log('Start Unzip Package ' + packageName);
+          return storage.unzip(`${projectName}/${packageName}/${constants.ZIP_PACKAGE_NAME}`, projectName, log)
+        })
+        .then(() => log.log('End Unzip Package ' + packageName));
+
+      if (dependencyList && dependencyList.length) {
+        dependencyList.forEach((dependencyPackageName) => {
+          promiseChain = promiseChain
+            .then(() => unzipPackages(projectName, dependencyPackageName, null, log))
+        });
+      }
+
+      promiseChain
+        .then(() => {
+          log.log('End Unzip Packages');
+          resolve();
+        })
+        .catch((e) => {
+          log.log('Error Unzip Packages ' + e);
+          reject(e);
+        });
+
+    } catch (e) {
+      log.log('Error Unzip Packages ' + e);
+      reject(e);
+    }
+  });
+}
+
+function getComponentTypesFromPackageXML(projectPath, packageName, dependencyList, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Get Component Types From PackageXML');
-      const packageXML = fs.readFileSync(`${projectPath}/${packageName}/package.xml`);
-      const packageJSON = JSON.parse(parser.toJson(packageXML));
 
-      const packageTypeList = [];
+      const packageMap = {};
 
-      if (!Array.isArray(packageJSON.Package.types)) {
-        packageJSON.Package.types = [packageJSON.Package.types];
-      }
+      dependencyList = JSON.parse(JSON.stringify(dependencyList));
+      dependencyList.push(packageName);
+      dependencyList.forEach((packName) => {
+        const packageXML = fs.readFileSync(`${projectPath}/${packName}/package.xml`);
+        const packageJSON = JSON.parse(parser.toJson(packageXML));
 
-      packageJSON.Package.types.forEach((type) => packageTypeList.push(createComponents(type)));
+        if (!Array.isArray(packageJSON.Package.types)) {
+          packageJSON.Package.types = [packageJSON.Package.types];
+        }
 
-      log.log('Count Of Component Types: ' + packageTypeList.length);
-      resolve(packageTypeList);
+        packageJSON.Package.types.forEach((type) => createComponents(packageMap, type, packName));
+      });
+
+      resolve(packageMap);
       log.log('End Get Component Types From PackageXML');
+
     } catch (e) {
       log.log('Error Get Component Types From PackageXML ' + e);
       reject(e);
@@ -31,61 +120,98 @@ function getComponentTypesFromPackageXML(projectPath, packageName, log) {
   });
 }
 
-function getMetadataInfo(accessToken, projectName, packageTypeList, log) {
+function createComponents(packageTypeMap, type, packageName) {
+  if (!packageTypeMap[packageName]) {
+    packageTypeMap[packageName] = {};
+  }
+  packageTypeMap[packageName][type.name] = {
+    type: type.name,
+    componentList: [],
+    packageName
+  };
+
+  if (typeof type.members === 'string') {
+    packageTypeMap[packageName][type.name].componentList.push({
+      apiName: type.members,
+      componentType: type.name,
+      fileList: []
+    });
+  } else {
+    type.members.forEach((member) => {
+      packageTypeMap[packageName][type.name].componentList.push({
+        apiName: member,
+        componentType: type.name,
+        fileList: []
+      });
+    });
+  }
+
+  return packageTypeMap;
+}
+
+function getMetadataInfo(accessToken, projectName, packageMap, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Get Metadata Info');
       const metadataInfoMap = {};
       let promiseChain = Promise.resolve();
-      packageTypeList.forEach((componentType) => {
-        promiseChain = promiseChain
-          .then(() => childProcess.call(
-            constants.getSFDXMetadataInfo(componentType.type, accessToken),
-            log,
-            { cwd: `./${projectName}`, maxBuffer: 1024 * 8000 },
-            false,
-            false
-            ))
-          .then((metadataInfo) => {
-            log.log('Received Metadata Info, ' + componentType.type);
-            metadataInfoMap[componentType.type] = JSON.parse(metadataInfo)
-          });
+      const antiDuplicateSet = new Set();
+      Object.values(packageMap).forEach((packageTypeMap) => {
+        Object.values(packageTypeMap).forEach((componentType) => {
+          if (!antiDuplicateSet.has(componentType.type)) {
+            antiDuplicateSet.add(componentType.type);
+            promiseChain = promiseChain
+              .then(() => childProcess.call(
+                constants.getSFDXMetadataInfo(componentType.type, accessToken),
+                log,
+                { cwd: `./${projectName}`, maxBuffer: 1024 * 8000 },
+                false,
+                false
+              ))
+              .then((metadataInfo) => {
+                log.log('Received Metadata Info, ' + componentType.type);
+                metadataInfoMap[componentType.type] = JSON.parse(metadataInfo)
+              });
+          }
+        });
       });
 
       promiseChain
         .then(() => {
           log.log('End Get Metadata Info');
-          resolve({ metadataInfoMap, packageTypeList });
+          resolve({ metadataInfoMap, packageMap });
         })
         .catch((e) => {
-          log.log('Start Get Metadata Info ' + e);
+          log.log('Error Get Metadata Info ' + e);
           reject(e);
         });
     } catch (e) {
-      log.log('Start Get Metadata Info ' + e);
+      log.log('Error Get Metadata Info ' + e);
       reject(e);
     }
   });
 }
 
-function mergeComponentsWithMetadataInfo(metadataInfoMap, packageTypeList, log) {
+function mergeComponentsWithMetadataInfo(metadataInfoMap, packageMap, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Merge Components With MetadataInfo');
-      packageTypeList.forEach((componentType) => {
-        const metadataInfoType = metadataInfoMap[componentType.type];
-        if (metadataInfoType && metadataInfoType.result && metadataInfoType.result.length) {
-          componentType.componentList.forEach((component) => {
-            const metadataInfo = metadataInfoType.result.find((metadataInfo) => metadataInfo.fullName === component.apiName);
-            if (metadataInfo) {
-              component.lastModifiedDate = metadataInfo.lastModifiedDate;
-              component.lastModifiedBy = metadataInfo.lastModifiedByName;
-            }
-          });
-        }
+      Object.values(packageMap).forEach((packageTypeMap) => {
+        Object.values(packageTypeMap).forEach((componentType) => {
+          const metadataInfoType = metadataInfoMap[componentType.type];
+          if (metadataInfoType && metadataInfoType.result && metadataInfoType.result.length) {
+            componentType.componentList.forEach((component) => {
+              const metadataInfo = metadataInfoType.result.find((metadataInfo) => metadataInfo.fullName === component.apiName);
+              if (metadataInfo) {
+                component.lastModifiedDate = metadataInfo.lastModifiedDate;
+                component.lastModifiedBy = metadataInfo.lastModifiedByName;
+              }
+            });
+          }
+        });
       });
 
-      resolve(packageTypeList);
+      resolve(packageMap);
       log.log('End Merge Components With MetadataInfo');
     } catch (e) {
       log.log('Error Merge Components With MetadataInfo ' + e);
@@ -94,13 +220,20 @@ function mergeComponentsWithMetadataInfo(metadataInfoMap, packageTypeList, log) 
   });
 }
 
-function createZipComponents(projectPath, packageName, packageTypeList, log) {
+function createZipComponents(projectPath, packageName, dependencyList, packageMap, log) {
   return new Promise((resolve, reject) => {
     try {
       log.log('Start Create Zip Components');
 
-      const metadataTypeParser = new MetadataTypeParser(packageTypeList, projectPath, packageName, log);
-      const chunkList = metadataTypeParser.parseMetadata(log);
+      dependencyList.push(packageName);
+      let metadataTypeParser = new MetadataTypeParser(projectPath, log);
+      const chunkList = []
+
+      dependencyList.forEach((dependencyPackageName) => {
+        metadataTypeParser.packageName = dependencyPackageName;
+        metadataTypeParser.packageTypeMap = packageMap[dependencyPackageName];
+        chunkList.push(...metadataTypeParser.parseMetadata());
+      });
 
       resolve(chunkList);
       log.log('End Create Zip Components');
@@ -109,26 +242,6 @@ function createZipComponents(projectPath, packageName, packageTypeList, log) {
       reject(e);
     }
   });
-}
-
-function createComponents(type) {
-  const componentList = [];
-  if (typeof type.members === 'string') {
-    componentList.push({
-      apiName: type.members,
-      componentType: type.name,
-      fileList: []
-    });
-  } else {
-    type.members.forEach((member) => {
-      componentList.push({
-        apiName: member,
-        componentType: type.name,
-        fileList: []
-      });
-    });
-  }
-  return { componentList, type: type.name };
 }
 
 function sendComponents(flosumUrl, flosumToken, namespacePrefix, chunkList, packageName, snapshotName, orgId, metadataLogId, log) {
@@ -232,6 +345,8 @@ function callUpdateInfo(flosumUrl, flosumToken, logId, nameSpacePrefix, attachme
 }
 
 module.exports = {
+  retrievePackages,
+  unzipPackages,
   getComponentTypesFromPackageXML,
   getMetadataInfo,
   mergeComponentsWithMetadataInfo,

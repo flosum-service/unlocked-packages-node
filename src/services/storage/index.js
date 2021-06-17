@@ -54,7 +54,7 @@ function createProjectDirectory(projectName, log) {
       log.log('End Create Project Directory');
       resolve();
     } catch (e) {
-      log.log('Error Create Project Directory');
+      log.log('Error Create Project Directory ' + e);
       reject(e);
     }
   });
@@ -80,20 +80,25 @@ function removeProject(projectName, log) {
   });
 }
 
-
-function unZip(zipPath, projectPath, log) {
+function unzip(zipPath, projectPath, log) {
   return new Promise((resolve, reject) => {
     try {
-      log.log('*** Start Create Zip');
+      log.log('Start Unzip');
       const zip = new AdmZip(zipPath);
       zip.extractAllTo(projectPath, false);
       resolve(zip);
-      log.log('*** End Create Zip');
+      log.log('End Unzip');
     } catch (e) {
-      log.log('*** Error Create Zip');
+      log.log('Error Unzip ' + e);
       reject(e);
     }
   });
+}
+
+function mergeDirectories(srcPath, destPath) {
+  const zip = new AdmZip();
+  zip.addLocalFolder(srcPath)
+  zip.extractAllTo(destPath, false);
 }
 
 module.exports = {
@@ -101,5 +106,6 @@ module.exports = {
   createProjectDirectory,
   createSFDXProjectJSON,
   removeProject,
-  unZip
+  mergeDirectories,
+  unzip
 }
