@@ -10,24 +10,16 @@ class MetadataTypeParser {
   zip;
   size;
   functionMap;
-  packageTypeList;
+  packageTypeMap;
   chunkList;
   projectPath;
   packageName;
   log;
   componentTypeListWithMetaXML;
 
-  constructor(packageTypeList, projectPath, packageName, log) {
+  constructor(projectPath, log) {
     this.projectPath = projectPath;
-    this.packageName = packageName;
-    this.packageTypeList = packageTypeList;
     this.log = log;
-    this.zip = new AdmZip();
-    this.count = 0;
-    this.chunkCounter = 0;
-    this.componentList = [];
-    this.size = 0;
-    this.chunkList = [{ typeList: [] }];
 
     this.componentTypeListWithMetaXML = [
       'ApexClass',
@@ -103,8 +95,21 @@ class MetadataTypeParser {
     }
   }
 
+  init() {
+    this.zip = new AdmZip();
+    this.count = 0;
+    this.chunkCounter = 0;
+    this.componentList = [];
+    this.size = 0;
+    this.chunkList = [{ typeList: [] }];
+  }
+
   parseMetadata() {
-    this.packageTypeList.forEach((type) => {
+    this.init();
+    if (!this.packageTypeMap || !this.packageName) {
+      throw new Error('Please set properties \'packageTypeMap\' and \'packageName\'')
+    }
+    Object.values(this.packageTypeMap).forEach((type) => {
       const folderType = constants.METADATA_FOLDER_TYPE_MAP[type.type];
       const folderTypePath = `${this.projectPath}/${this.packageName}/${folderType}`;
       if (folderType && fs.existsSync(folderTypePath)) {
