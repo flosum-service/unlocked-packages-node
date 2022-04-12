@@ -6,6 +6,7 @@ const express = require('./config/express');
 
 // Start the Express Server using predifined configuration options
 function startAPI() {
+  debug.enable('unpack*');
   const log = debug('unpack:api:startAPI');
   log('Starting up the Express server...');
   const app = express.configureExpress(configureObject);

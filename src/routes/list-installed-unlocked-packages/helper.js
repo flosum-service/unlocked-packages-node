@@ -1,6 +1,51 @@
 const http = require('../../services/http');
 const constants = require('../../constants');
 
+async function callInstalledUnlockedPackages(instanceUrl, accessToken, isWithDependencies, log) {
+  try {
+    if (isWithDependencies) {
+      try {
+        const installedPackagesList = await http.callToolingAPIRequest(instanceUrl, accessToken, constants.QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST, log);
+        return await parseInstalledUnlockedPackageList(installedPackagesList, isWithDependencies, log);
+      } catch (e) {
+        const responsePackagesList = await http.callToolingAPIRequest(instanceUrl, accessToken, constants.QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST_WITHOUT_DEPEND, log);
+        const responsePackagesWithDependencyList = await checkDependencies(instanceUrl, accessToken, responsePackagesList, log);
+        return await parseInstalledUnlockedPackageList(responsePackagesWithDependencyList, isWithDependencies, log);
+      }
+    } else {
+      return await http.callToolingAPIRequest(instanceUrl, accessToken, constants.QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST_WITHOUT_DEPEND, log)
+    }
+  } catch (e) {
+    log.log('Error Call Installed Unlocked Packages' + e);
+    throw e;
+  }
+}
+
+async function checkDependencies(instanceUrl, accessToken, installedUnlockedPackageList, log) {
+    try {
+      const promiseList = [];
+      const packagesMap = {};
+      installedUnlockedPackageList.forEach((pack) => {
+        if (pack.SubscriberPackageVersion && pack.SubscriberPackageVersion.Package2ContainerOptions === 'Unlocked') {
+          promiseList.push(http.callToolingAPIRequest(instanceUrl, accessToken, constants.getDependencyQuery(pack.SubscriberPackageVersionId), log));
+          packagesMap[pack.SubscriberPackageVersionId] = pack;
+        }
+      });
+
+      const subscriberPackageVersionList = await Promise.all(promiseList);
+
+      subscriberPackageVersionList.forEach((subPack) => {
+        if (subPack && subPack.length && subPack[0].Dependencies && subPack[0].Dependencies.ids) {
+          packagesMap[subPack[0].Id].SubscriberPackageVersion.Dependencies = subPack[0].Dependencies;
+        }
+      });
+
+      return Object.values(packagesMap);
+    } catch (e) {
+      log.log('Error Check Dependencies' + e);
+    }
+}
+
 function parseInstalledUnlockedPackageList(packageList, withDependencies, log) {
   return new Promise((resolve, reject) => {
     try {
@@ -10,6 +55,7 @@ function parseInstalledUnlockedPackageList(packageList, withDependencies, log) {
         packageList.forEach((pack) => {
           if (pack.SubscriberPackageVersion && pack.SubscriberPackageVersion.Package2ContainerOptions === 'Unlocked') {
             installedUnlockedPackageList.push({
+              subscriberPackageVersionId: pack.SubscriberPackageVersionId,
               name: pack.SubscriberPackage.Name,
               dependencyList: pack.SubscriberPackageVersion.Dependencies ? pack.SubscriberPackageVersion.Dependencies.ids : []
             });
@@ -31,6 +77,8 @@ function parseInstalledUnlockedPackageList(packageList, withDependencies, log) {
     }
   })
 }
+
+
 
 function getDependencyPackages(instanceUrl, accessToken, installedUnlockedPackageList, log) {
   return new Promise((resolve, reject) => {
@@ -99,7 +147,7 @@ function addDependencyInfo(instanceUrl, accessToken, dependency, packageName, lo
 
 
 module.exports = {
-  parseInstalledUnlockedPackageList,
+  callInstalledUnlockedPackages,
   getDependencyPackages
 }
 

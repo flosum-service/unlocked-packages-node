@@ -13,11 +13,7 @@ function getInstalledPackageList(body, log) {
       const withDependencies = body.withDependencies;
 
       Promise.resolve()
-        .then(() => storage.createProjectDirectory(projectName, log))
-        .then(() => storage.createSFDXProjectJSON(projectName, log))
-        .then(() => storage.setInstanceUrl(projectName, instanceUrl.replace('https://', ''), log))
-        .then(() => http.callToolingAPIRequest(instanceUrl, accessToken, constants.QUERY_INSTALLED_PACKAGE_LIST, log))
-        .then((packageList) => helper.parseInstalledUnlockedPackageList(packageList, withDependencies, log))
+        .then(() => helper.callInstalledUnlockedPackages(instanceUrl, accessToken, withDependencies, log))
         .then((parsedPackageList) => {
           if (withDependencies) {
             return helper.getDependencyPackages(instanceUrl, accessToken, parsedPackageList, log);
@@ -27,7 +23,6 @@ function getInstalledPackageList(body, log) {
         })
         .then(resolve)
         .catch(reject)
-        .then(() => storage.removeProject(projectName, log));
     } catch (e) {
       reject('Error: ' + e);
     }

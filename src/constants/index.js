@@ -30,6 +30,7 @@ const SOURCE_OBJECT_BRANCH = 'Component__c';
 const ZIP_PACKAGE_NAME = 'unpackaged.zip';
 const MAX_SIZE_UNZIP_ATTACHMENT = 2500000;
 const QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST = 'SELECT+SubscriberPackage.Name,+SubscriberPackageVersion.Dependencies,+SubscriberPackageVersion.Package2ContainerOptions+FROM+InstalledSubscriberPackage';
+const QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST_WITHOUT_DEPEND = 'SELECT+SubscriberPackage.Name,+SubscriberPackageVersion.Package2ContainerOptions,SubscriberPackageVersionId+FROM+InstalledSubscriberPackage';
 
 const SFDX_PROJECT_EXAMPLE = '{\n' +
   '  "packageDirectories": [\n' +
@@ -75,6 +76,10 @@ const LIST_INSTALLED_PACKAGES_REQUIRED_FIELDS = ['instanceUrl', 'accessToken'];
 const CREATE_SNAPSHOT_FROM_UNLOCKED_PACKAGE_REQUIRED_FIELDS = ['instanceUrl', 'accessToken', 'sourceAccessToken', 'sourceUrl', 'packageName', 'snapshotName', 'orgId', 'metadataLogId', 'logAttachmentId', 'namespacePrefix'];
 const CREATE_PACKAGE_REQUIRED_FIELDS = ['username', 'userId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
 const CREATE_PACKAGE_VERSION_REQUIRED_FIELDS = ['versionName', 'versionKey', 'componentList', 'username', 'userId', 'unlockedPackageVersionId', 'unlockedPackageTempLogId', 'unlockedPackageId', 'sfdxProject', 'sessionId', 'orgId', 'domain', 'timestamp', 'packageName'];
+
+function getDependencyQuery(subscriberPackageVersionId) {
+  return `SELECT id, Dependencies FROM SubscriberPackageVersion where id = '${subscriberPackageVersionId}'`;
+}
 
 function getPackageById(packageId) {
   return `SELECT+SubscriberPackage.Name,+SubscriberPackageVersion.Dependencies+FROM+InstalledSubscriberPackage+WHERE+SubscriberPackageVersionId+=+'${packageId}'`;
@@ -296,7 +301,9 @@ module.exports = {
   SFDX_PROJECT_EXAMPLE,
   ZIP_PACKAGE_NAME,
   MAX_SIZE_UNZIP_ATTACHMENT,
-  QUERY_INSTALLED_PACKAGE_LIST: QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST,
+  QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST,
+  QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST_WITHOUT_DEPEND,
+  getDependencyQuery,
   getPackageById,
   getSFDXCreateProject,
   getSFDXConvertMetadata,
