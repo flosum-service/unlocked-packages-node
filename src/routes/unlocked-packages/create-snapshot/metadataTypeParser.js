@@ -1,5 +1,6 @@
 const AdmZip = require('adm-zip');
 const fs = require('fs');
+const X2JS = require('x2js');
 const constants = require('../../../constants');
 const path = require('path');
 
@@ -30,14 +31,74 @@ class MetadataTypeParser {
       'Document'
     ];
 
+    this.innerXMLHeaderMap = {
+      CustomLabel: '<?xml version="1.0" encoding="UTF-8"?><CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">',
+      AssignmentRule: '<?xml version="1.0" encoding="UTF-8"?><AssignmentRules xmlns="http://soap.sforce.com/2006/04/metadata">',
+      AutoResponseRule: '<?xml version="1.0" encoding="UTF-8"?><AutoResponseRules xmlns="http://soap.sforce.com/2006/04/metadata">',
+      WorkflowTask: '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">',
+      WorkflowOutboundMessage: '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">',
+      WorkflowFieldUpdate: '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">',
+      WorkflowKnowledgePublish: '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">',
+      WorkflowAlert: '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">',
+      WorkflowRule: '<?xml version="1.0" encoding="UTF-8"?><Workflow xmlns="http://soap.sforce.com/2006/04/metadata">',
+      SharingCriteriaRule: '<?xml version="1.0" encoding="UTF-8"?><SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">',
+      SharingOwnerRule: '<?xml version="1.0" encoding="UTF-8"?><SharingRules xmlns="http://soap.sforce.com/2006/04/metadata">',
+      EscalationRule: '<?xml version="1.0" encoding="UTF-8"?><EscalationRules xmlns="http://soap.sforce.com/2006/04/metadata">',
+      MatchingRule: '<?xml version="1.0" encoding="UTF-8"?><MatchingRules xmlns="http://soap.sforce.com/2006/04/metadata">',
+      ManagedTopic: '<?xml version="1.0" encoding="UTF-8"?><ManagedTopics xmlns="http://soap.sforce.com/2006/04/metadata">',
+      Other: '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">'
+    };
+
+    this.innerSRCJSONMap = {
+      CustomLabel: 'CustomLabels',
+      CustomField: 'CustomObject',
+      ListView: 'CustomObject',
+      CompactLayout: 'CustomObject',
+      WebLink: 'CustomObject',
+      RecordType: 'CustomObject',
+      FieldSet: 'CustomObject',
+      ValidationRule: 'CustomObject',
+      BusinessProcess: 'CustomObject',
+      SharingReason: 'CustomObject',
+      AssignmentRule: 'AssignmentRules',
+      AutoResponseRule: 'AutoResponseRules',
+      WorkflowTask: 'Workflow',
+      WorkflowOutboundMessage: 'Workflow',
+      WorkflowFieldUpdate: 'Workflow',
+      WorkflowKnowledgePublish: 'Workflow',
+      WorkflowAlert: 'Workflow',
+      WorkflowRule: 'Workflow',
+      SharingCriteriaRule: 'SharingRules',
+      SharingOwnerRule: 'SharingRules',
+      EscalationRule: 'EscalationRules',
+      MatchingRule: 'MatchingRules',
+      ManagedTopic: 'ManagedTopics',
+    };
+
     this.customObjectChildMap = {
-      'CustomField': 'fields',
-      'ListView': 'listViews',
-      'RecordType': 'recordTypes',
-      'ValidationRule': 'validationRules',
-      'WebLink': 'webLinks',
-      'CompactLayout': 'compactLayouts',
-      'BusinessProcess': 'businessProcesses',
+      CustomLabel: 'labels',
+      CustomField: 'fields',
+      ListView: 'listViews',
+      CompactLayout: 'compactLayouts',
+      WebLink: 'webLinks',
+      RecordType: 'recordTypes',
+      FieldSet: 'fieldSets',
+      ValidationRule: 'validationRules',
+      BusinessProcess: 'businessProcesses',
+      SharingReason: 'sharingReasons',
+      AssignmentRule: 'assignmentRule',
+      AutoResponseRule: 'autoResponseRule',
+      WorkflowTask: 'tasks',
+      WorkflowOutboundMessage: 'outboundMessages',
+      WorkflowFieldUpdate: 'fieldUpdates',
+      WorkflowKnowledgePublish: 'knowledgePublishes',
+      WorkflowAlert: 'alerts',
+      WorkflowRule: 'rules',
+      SharingCriteriaRule: 'sharingCriteriaRules',
+      SharingOwnerRule: 'sharingOwnerRules',
+      EscalationRule: 'escalationRule',
+      MatchingRule: 'matchingRules',
+      ManagedTopic: 'managedTopic',
     };
 
     this.functionMap = {
@@ -80,14 +141,32 @@ class MetadataTypeParser {
       ApexTestSuite: this.getDefaultTypes,
       Workflow: this.getDefaultTypes,
 
+      CustomLabel: this.customLabelProcessor,
+
       CustomField: this.getChildTypesFromCustomObject,
       ListView: this.getChildTypesFromCustomObject,
-      RecordType: this.getRecordTypes,
       ValidationRule: this.getChildTypesFromCustomObject,
       WebLink: this.getChildTypesFromCustomObject,
       CompactLayout: this.getChildTypesFromCustomObject,
       BusinessProcess: this.getChildTypesFromCustomObject,
+      FieldSet: this.getChildTypesFromCustomObject,
+      AssignmentRule: this.getChildTypesFromCustomObject,
+      AutoResponseRule: this.getChildTypesFromCustomObject,
+      WorkflowTask: this.getChildTypesFromCustomObject,
+      WorkflowOutboundMessage: this.getChildTypesFromCustomObject,
+      WorkflowFieldUpdate: this.getChildTypesFromCustomObject,
+      WorkflowKnowledgePublish: this.getChildTypesFromCustomObject,
+      WorkflowAlert: this.getChildTypesFromCustomObject,
+      WorkflowRule: this.getChildTypesFromCustomObject,
+      SharingOwnerRule: this.getChildTypesFromCustomObject,
+      SharingCriteriaRule: this.getChildTypesFromCustomObject,
+      SharingReason: this.getChildTypesFromCustomObject,
+      EscalationRule: this.getChildTypesFromCustomObject,
+      MatchingRule: this.getChildTypesFromCustomObject,
+      ManagedTopic: this.getChildTypesFromCustomObject,
       // FieldSet: this.getChildTypesFromCustomObject,
+
+      RecordType: this.getRecordTypes,
 
       Document: this.getTypesFromFolder,
       EmailTemplate: this.getTypesFromFolder,
@@ -211,9 +290,6 @@ class MetadataTypeParser {
 
   // CustomField, ListView, ValidationRule, WebLink
   getChildTypesFromCustomObject(type, folderContentList, folderType) {
-    if (type.type === 'CustomField') {
-      console.log('e')
-    }
     if (!this.customObjectChildMap[type.type]) {
       this.log.log(`Unsupported Component Type ${type.type}. Child Type Not Found.`);
       return
@@ -253,6 +329,76 @@ class MetadataTypeParser {
       this.updateChunkList(type);
     });
     type.zip = this.zip.toBuffer().toString('base64');
+  }
+
+  customLabelProcessor(type, folderContentList, folderType) {
+    const customLabelPath = `${this.projectPath}/${this.packageName}/${folderType}/CustomLabels.labels`;
+
+    const xml = fs.readFileSync(customLabelPath)?.toString('utf8');
+    const header = this.getHeader('CustomLabel');
+    let fullLabelXML = '';
+    const footer = this.getFooter('CustomLabel');
+    let count = 0;
+    type.componentList.forEach((component) => {
+      const labelXML = this.getChildXML(xml, component.componentType, component.apiName);
+      if (labelXML) {
+        fullLabelXML += labelXML;
+        this.componentList.push(component);
+        count++;
+      }
+      if (count > 100) {
+        const full = `${header}${fullLabelXML}${footer}`;
+        this.zip.addFile(`${folderType}/CustomLabels.labels`, full);
+        this.updateChunkList('CustomLabel');
+        fullLabelXML = '';
+      }
+    });
+
+    if (this.componentList.length) {
+      const full = `${header}${fullLabelXML}${footer}`;
+      this.zip.addFile(`${folderType}/CustomLabels.labels`, full);
+      this.updateChunkList('CustomLabel');
+    }
+  }
+
+  getFooter (type) {
+    return `</${this.innerSRCJSONMap[type]}>`
+  }
+
+  getHeader (type) {
+    return this.innerXMLHeaderMap[type] ? this.innerXMLHeaderMap[type] : this.innerXMLHeaderMap.Other;
+  }
+
+  getChildXML(xml, type, componentName) {
+    componentName = componentName.includes('.') ? componentName.split('.')[1] : componentName;
+    const x2js = new X2JS({ useDoubleQuotes: true, stripWhitespaces: false, escapeMode: true });
+
+    let jsonItem = {};
+    const srcJson = x2js.xml2js(xml);
+
+    const getBody = (tempJSON, type) => {
+      return `<${this.customObjectChildMap[type]}>${x2js.js2xml(JSON.parse(tempJSON))}</${this.customObjectChildMap[type]}>`
+    }
+
+    if (srcJson) {
+      const srcItemList = srcJson[this.innerSRCJSONMap[type]][this.customObjectChildMap[type]];
+      if (srcItemList) {
+        if (srcItemList.fullName && srcItemList.fullName === componentName) {
+          jsonItem = JSON.stringify(srcItemList);
+        } else {
+          srcItemList.forEach((item) =>  {
+            if (item.fullName === componentName) {
+              jsonItem = JSON.stringify(item)
+            }
+          });
+        }
+      }
+    }
+
+    if (jsonItem) {
+      return getBody(jsonItem, type);
+    }
+    return '';
   }
 
   getRecordTypes(type, folderContentList, folderType) {

@@ -205,6 +205,7 @@ function mergeComponentsWithMetadataInfo(metadataInfoMap, packageMap, log) {
               if (metadataInfo) {
                 component.lastModifiedDate = metadataInfo.lastModifiedDate;
                 component.lastModifiedBy = metadataInfo.lastModifiedByName;
+                component.label = metadataInfo.fileName;
               }
             });
           }
