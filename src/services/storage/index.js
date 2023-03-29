@@ -64,7 +64,7 @@ function removeProject(projectName, log) {
   return new Promise((resolve, reject) => {
     log.log('Start Remove Project Directory');
     try {
-      fs.rm(`./${projectName}`, { recursive: true }, (e) => {
+      fs.rmdir(`./${projectName}`, { recursive: true }, (e) => {
         if (e) {
           log.log(`Error Remove Project Directory ${e}`);
           reject(e);

@@ -31,6 +31,11 @@ router.use((error, req, res, next) => {
 router.use((req, res, next) => {
   const log = debug(`unpack:root:${req.headers['x-request-id']}`);
   log('reqPath: %s', utils.removeSensitiveData(req.path));
+  log('reqHeaders:\n%o', utils.removeSensitiveData(req.headers));
+  log('reqParams:\n%o', utils.removeSensitiveData(req.params));
+  log('reqQuery:\n%o', utils.removeSensitiveData(req.query));
+  log('reqBody:\n%o', utils.removeSensitiveData(req.body));
+  log('resHeaders:\n%o', utils.removeSensitiveData(res.getHeaders()));
   next();
 });
 module.exports = router;

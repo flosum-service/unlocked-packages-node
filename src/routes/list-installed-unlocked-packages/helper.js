@@ -22,28 +22,28 @@ async function callInstalledUnlockedPackages(instanceUrl, accessToken, isWithDep
 }
 
 async function checkDependencies(instanceUrl, accessToken, installedUnlockedPackageList, log) {
-    try {
-      const promiseList = [];
-      const packagesMap = {};
-      installedUnlockedPackageList.forEach((pack) => {
-        if (pack.SubscriberPackageVersion && pack.SubscriberPackageVersion.Package2ContainerOptions === 'Unlocked') {
-          promiseList.push(http.callToolingAPIRequest(instanceUrl, accessToken, constants.getDependencyQuery(pack.SubscriberPackageVersionId), log));
-          packagesMap[pack.SubscriberPackageVersionId] = pack;
-        }
-      });
+  try {
+    const promiseList = [];
+    const packagesMap = {};
+    installedUnlockedPackageList.forEach((pack) => {
+      if (pack.SubscriberPackageVersion && pack.SubscriberPackageVersion.Package2ContainerOptions === 'Unlocked') {
+        promiseList.push(http.callToolingAPIRequest(instanceUrl, accessToken, constants.getDependencyQuery(pack.SubscriberPackageVersionId), log));
+        packagesMap[pack.SubscriberPackageVersionId] = pack;
+      }
+    });
 
-      const subscriberPackageVersionList = await Promise.all(promiseList);
+    const subscriberPackageVersionList = await Promise.all(promiseList);
 
-      subscriberPackageVersionList.forEach((subPack) => {
-        if (subPack && subPack.length && subPack[0].Dependencies && subPack[0].Dependencies.ids) {
-          packagesMap[subPack[0].Id].SubscriberPackageVersion.Dependencies = subPack[0].Dependencies;
-        }
-      });
+    subscriberPackageVersionList.forEach((subPack) => {
+      if (subPack && subPack.length && subPack[0].Dependencies && subPack[0].Dependencies.ids) {
+        packagesMap[subPack[0].Id].SubscriberPackageVersion.Dependencies = subPack[0].Dependencies;
+      }
+    });
 
-      return Object.values(packagesMap);
-    } catch (e) {
-      log.log('Error Check Dependencies' + e);
-    }
+    return Object.values(packagesMap);
+  } catch (e) {
+    log.log('Error Check Dependencies' + e);
+  }
 }
 
 function parseInstalledUnlockedPackageList(packageList, withDependencies, log) {
@@ -117,7 +117,7 @@ function addDependencyInfo(instanceUrl, accessToken, dependency, packageName, lo
         .then((dependencyPackageList) => {
           if (dependencyPackageList && dependencyPackageList.length) {
             dependency.name = dependencyPackageList[0].SubscriberPackage.Name;
-            dependency.dependencyList = dependencyPackageList[0].SubscriberPackageVersion.Dependencies
+            dependency.dependencyList = dependencyPackageList[0].SubscriberPackageVersion?.Dependencies?.id
               ? dependencyPackageList[0].Dependencies.ids
               : []
             log.log(`On package '${packageName}' founded dependency '${dependency.name}'`);

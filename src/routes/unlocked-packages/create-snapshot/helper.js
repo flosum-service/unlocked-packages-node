@@ -1,6 +1,5 @@
 const fs = require('fs');
 const constants = require('../../../constants');
-const parser = require('xml2json');
 const http = require('../../../services/http');
 const childProcess = require('../../../services/child-process');
 const storage = require('../../../services/storage');
