@@ -4,16 +4,28 @@ const constants = require('../../constants');
 async function callInstalledUnlockedPackages(instanceUrl, accessToken, isWithDependencies, log) {
   try {
     if (isWithDependencies) {
-      try {
-        const installedPackagesList = await http.callToolingAPIRequest(instanceUrl, accessToken, constants.QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST, log);
-        return await parseInstalledUnlockedPackageList(installedPackagesList, isWithDependencies, log);
-      } catch (e) {
-        const responsePackagesList = await http.callToolingAPIRequest(instanceUrl, accessToken, constants.QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST_WITHOUT_DEPEND, log);
-        const responsePackagesWithDependencyList = await checkDependencies(instanceUrl, accessToken, responsePackagesList, log);
-        return await parseInstalledUnlockedPackageList(responsePackagesWithDependencyList, isWithDependencies, log);
-      }
+        const allPackages = await http.callToolingAPIRequest(
+            instanceUrl,
+            accessToken,
+            constants.QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST_WITHOUT_DEPEND,
+            log
+        );
+
+        const unlockedPackages = await getUnlockedPackagesWithDependencies(
+            instanceUrl,
+            accessToken,
+            allPackages,
+            log
+        );
+
+        return await parseInstalledUnlockedPackageList(unlockedPackages, isWithDependencies, log);
     } else {
-      return await http.callToolingAPIRequest(instanceUrl, accessToken, constants.QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST_WITHOUT_DEPEND, log)
+      return await http.callToolingAPIRequest(
+          instanceUrl,
+          accessToken,
+          constants.QUERY_INSTALLED_UNLOCKED_PACKAGE_LIST_WITHOUT_DEPEND,
+          log
+      );
     }
   } catch (e) {
     log.log('Error Call Installed Unlocked Packages' + e);
@@ -21,28 +33,35 @@ async function callInstalledUnlockedPackages(instanceUrl, accessToken, isWithDep
   }
 }
 
-async function checkDependencies(instanceUrl, accessToken, installedUnlockedPackageList, log) {
+async function getUnlockedPackagesWithDependencies(instanceUrl, accessToken, installedPackageList, log) {
   try {
-    const promiseList = [];
-    const packagesMap = {};
-    installedUnlockedPackageList.forEach((pack) => {
-      if (pack.SubscriberPackageVersion && pack.SubscriberPackageVersion.Package2ContainerOptions === 'Unlocked') {
-        promiseList.push(http.callToolingAPIRequest(instanceUrl, accessToken, constants.getDependencyQuery(pack.SubscriberPackageVersionId), log));
-        packagesMap[pack.SubscriberPackageVersionId] = pack;
-      }
+    const installedUnlockedPackageList = installedPackageList.filter(p => {
+      return p?.SubscriberPackageVersion?.Package2ContainerOptions === 'Unlocked'
     });
 
-    const subscriberPackageVersionList = await Promise.all(promiseList);
+    for (const unpack of installedUnlockedPackageList) {
+      const versions = await http.callToolingAPIRequest(
+          instanceUrl,
+          accessToken,
+          constants.getDependencyQuery(unpack.SubscriberPackageVersionId),
+          log
+      );
 
-    subscriberPackageVersionList.forEach((subPack) => {
-      if (subPack && subPack.length && subPack[0].Dependencies && subPack[0].Dependencies.ids) {
-        packagesMap[subPack[0].Id].SubscriberPackageVersion.Dependencies = subPack[0].Dependencies;
+      if (!versions.length) {
+        continue;
       }
-    });
 
-    return Object.values(packagesMap);
+      if (!versions[0]?.Dependencies?.ids) {
+        continue;
+      }
+
+      unpack.SubscriberPackageVersion.Dependencies = versions[0].Dependencies
+    }
+
+    return installedUnlockedPackageList;
   } catch (e) {
     log.log('Error Check Dependencies' + e);
+    throw e;
   }
 }
 
@@ -80,69 +99,59 @@ function parseInstalledUnlockedPackageList(packageList, withDependencies, log) {
 
 
 
-function getDependencyPackages(instanceUrl, accessToken, installedUnlockedPackageList, log) {
-  return new Promise((resolve, reject) => {
+async function getDependencyPackages(instanceUrl, accessToken, installedUnlockedPackageList, log) {
+
     try {
       log.log('Start Get Dependency Packages');
-      let promiseChain = Promise.resolve();
-      installedUnlockedPackageList.forEach((pack) => {
-        if (pack.dependencyList && pack.dependencyList.length) {
-          pack.dependencyList.forEach((dependency) => {
-            promiseChain = promiseChain
-              .then(() => addDependencyInfo(instanceUrl, accessToken, dependency, pack.name, log));
-          });
-        }
-      });
 
-      promiseChain
-        .then(() => {
-          log.log('End Get Dependency Packages');
-          resolve(installedUnlockedPackageList);
-        })
-        .catch((e) => {
-          log.log('Error Get Dependency Packages ' + e);
-          reject(e);
-        });
+      for (const unpack of installedUnlockedPackageList) {
+        if (!unpack.dependencyList?.length) {
+          continue;
+        }
+
+        for (const dependency of unpack.dependencyList) {
+          await addDependencyInfo(instanceUrl, accessToken, dependency, unpack.name, log);
+        }
+
+        unpack.dependencyList = unpack.dependencyList.filter(u => u.name && u.dependencyList);
+      }
+
+      log.log('End Get Dependency Packages');
     } catch (e) {
       log.log('Error Get Dependency Packages ' + e);
-      reject(e);
+      throw e;
     }
-  })
 }
 
-function addDependencyInfo(instanceUrl, accessToken, dependency, packageName, log) {
-  return new Promise((resolve, reject) => {
-    try {
-      http.callToolingAPIRequest(instanceUrl, accessToken, constants.getPackageById(dependency.subscriberPackageVersionId), log)
-        .then((dependencyPackageList) => {
-          if (dependencyPackageList && dependencyPackageList.length) {
-            dependency.name = dependencyPackageList[0].SubscriberPackage.Name;
-            dependency.dependencyList = dependencyPackageList[0].SubscriberPackageVersion?.Dependencies?.id
-              ? dependencyPackageList[0].Dependencies.ids
-              : []
-            log.log(`On package '${packageName}' founded dependency '${dependency.name}'`);
-            if (dependency.dependencyList.length) {
-              let promiseChain = Promise.resolve();
-              dependency.dependencyList.forEach((dependency1) => {
-                promiseChain = promiseChain
-                  .then(() => addDependencyInfo(instanceUrl, accessToken, dependency1, dependency.name, log));
+async function addDependencyInfo(instanceUrl, accessToken, dependency, packageName, log) {
+  try {
+    const dependencyPackageList = await http.callToolingAPIRequest(
+        instanceUrl,
+        accessToken,
+        constants.getPackageById(dependency.subscriberPackageVersionId),
+        log
+    );
 
-                promiseChain
-                  .then(resolve)
-                  .catch(reject);
-              });
-            } else {
-              resolve(dependency);
-            }
-          } else {
-            resolve(dependency);
-          }
-        })
-        .catch(reject);
-    } catch (e) {
-      reject(e);
+    if (!dependencyPackageList?.length) {
+      return;
     }
-  })
+
+    const dependencyResult = dependencyPackageList[0];
+    dependency.name = dependencyResult.SubscriberPackage.Name;
+    dependency.dependencyList = [];
+
+    if (!dependencyResult.SubscriberPackageVersion?.Dependencies?.ids) {
+      return;
+    }
+
+    for (const deepDependency of dependencyResult.SubscriberPackageVersion.Dependencies.ids) {
+      await addDependencyInfo(instanceUrl, accessToken, deepDependency, dependency.name, log)
+    }
+  } catch (e) {
+    log.log('Error Add Dependency Info ' + e);
+    console.log('Error Add Dependency Info ', e);
+    throw e;
+  }
 }
 
 

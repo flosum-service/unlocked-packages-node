@@ -31,41 +31,39 @@ function post(domain, sessionId, namespacePrefix, body) {
   });
 }
 
-function callToolingAPIRequest(instanceUrl, accessToken, query, log) {
-  return new Promise((resolve, reject) => {
+async function callToolingAPIRequest(instanceUrl, accessToken, query, log) {
     try {
       log.log(`Start Call Tooling API Request Query = ${query}`);
+
       const headers = {
         'Authorization': `OAuth ${accessToken}`,
         'Content-Type': 'application/json',
       };
+
       const url = `${instanceUrl}/services/data/v51.0/tooling/query/?q=${query}`;
-      axios.get(url, { headers })
-        .then((response) => {
-          log.log(`End Call Tooling API Request`);
-          resolve(response.data.records);
-        }).catch((e) => {
-        if (e && e.response && e.response.data) {
-          if (typeof e.response.data !== 'string') {
-            log.log(`Error Call Tooling API Request Error: ${JSON.stringify(e.response.data)}`);
-            reject(JSON.stringify(e.response.data));
-          } else {
-            log.log(`Error Call Tooling API Request Error: ${e.response.data}`);
-            reject(e.response.data);
-          }
-        } else if (e.request) {
-          log.log(`Error Call Tooling API Request Error: ${e.request}`);
-          reject(e.request);
-        } else {
-          log.log(`Error Call Tooling API Request Error: ${e.message}`);
-          reject(e.message);
-        }
-      });
+
+      const response = await axios.get(url, { headers });
+
+      log.log(`End Call Tooling API Request`);
+
+      return response.data.records;
     } catch (e) {
-      log.log(`Error Call Tooling API Request Error: ${e.message}`);
-      reject(e);
+      let error;
+      if (e.response?.data) {
+        if (typeof e.response.data !== 'string') {
+          error = JSON.stringify(e.response.data);
+        } else {
+          error = e.response.data;
+        }
+      } else if (e.request) {
+        error = e.request;
+      } else {
+        error = e.message;
+      }
+
+      log.log(`Error Call Tooling API Request Error: ${error}`);
+      throw new Error(error);
     }
-  });
 }
 
 module.exports = {

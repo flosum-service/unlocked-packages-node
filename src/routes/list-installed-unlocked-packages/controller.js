@@ -12,8 +12,9 @@ async function getInstalledPackageList(body, log) {
         return packages;
       }
 
-      return await helper.getDependencyPackages(instanceUrl, accessToken, packages, log);
+      await helper.getDependencyPackages(instanceUrl, accessToken, packages, log);
 
+      return packages;
     } catch (e) {
       log.log(e);
       throw e;
