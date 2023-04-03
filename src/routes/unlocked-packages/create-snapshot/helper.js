@@ -1,4 +1,6 @@
 const fs = require('fs');
+const xml2js = require('xml2js');
+
 const constants = require('../../../constants');
 const http = require('../../../services/http');
 const childProcess = require('../../../services/child-process');
@@ -90,24 +92,25 @@ function unzipPackages(projectName, packageName, dependencyList, log) {
 }
 
 function getComponentTypesFromPackageXML(projectPath, packageName, dependencyList, log) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       log.log('Start Get Component Types From PackageXML');
 
+      const parser = xml2js.Parser();
       const packageMap = {};
 
       dependencyList = JSON.parse(JSON.stringify(dependencyList));
       dependencyList.push(packageName);
-      dependencyList.forEach((packName) => {
+      for (const packName of dependencyList) {
         const packageXML = fs.readFileSync(`${projectPath}/${packName}/package.xml`);
-        const packageJSON = JSON.parse(parser.toJson(packageXML));
+        const packageJSON = await parser.parseStringPromise(packageXML);
 
         if (!Array.isArray(packageJSON.Package.types)) {
           packageJSON.Package.types = [packageJSON.Package.types];
         }
 
         packageJSON.Package.types.forEach((type) => createComponents(packageMap, type, packName));
-      });
+      }
 
       resolve(packageMap);
       log.log('End Get Component Types From PackageXML');
