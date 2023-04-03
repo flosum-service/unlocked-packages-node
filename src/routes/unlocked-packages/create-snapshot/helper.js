@@ -96,7 +96,7 @@ function getComponentTypesFromPackageXML(projectPath, packageName, dependencyLis
     try {
       log.log('Start Get Component Types From PackageXML');
 
-      const parser = xml2js.Parser();
+      const parser = xml2js.Parser({ explicitArray: false });
       const packageMap = {};
 
       dependencyList = JSON.parse(JSON.stringify(dependencyList));
