@@ -10,9 +10,17 @@ const { MetadataTypeParser } = require('./metadataTypeParser');
 function retrievePackages(accessToken, projectName, packageName, dependencyList, log) {
   return new Promise((resolve, reject) => {
     try {
+
+      //  Case 00015574
+      const packageNameFolder = packageName.replaceAll(/\//g, "-");
+
       log.log('Start Retrieve Packages');
       try {
-        fs.mkdirSync(`./${projectName}/${packageName}`);
+
+        //  Case 00015574
+        fs.mkdirSync(`./${projectName}/${packageNameFolder}`);
+        // fs.mkdirSync(`./${projectName}/${packageName}`);
+
       } catch (e) {
         log.log('Error Create Package Directory ' + e);
         reject(e);
@@ -21,12 +29,21 @@ function retrievePackages(accessToken, projectName, packageName, dependencyList,
       promiseChain = promiseChain
         .then(() => {
           log.log('Start Retrieve Package ' + packageName);
+
+          //  Case 00015574
           return childProcess.call(
             constants.getSFDXRetrievePackage(accessToken, packageName),
             log,
-            { cwd: `./${projectName}/${packageName}`,
+            { cwd: `./${projectName}/${packageNameFolder}`,
               maxBuffer: 1024 * 500
             })
+
+          // return childProcess.call(
+          //   constants.getSFDXRetrievePackage(accessToken, packageName),
+          //   log,
+          //   { cwd: `./${projectName}/${packageName}`,
+          //     maxBuffer: 1024 * 500
+          //   })
         })
         .then(() => log.log('End Retrieve Package ' + packageName));
 
@@ -63,7 +80,13 @@ function unzipPackages(projectName, packageName, dependencyList, log) {
       promiseChain = promiseChain
         .then(() => {
           log.log('Start Unzip Package ' + packageName);
-          return storage.unzip(`${projectName}/${packageName}/${constants.ZIP_PACKAGE_NAME}`, projectName, log)
+
+          // return storage.unzip(`${projectName}/${packageName}/${constants.ZIP_PACKAGE_NAME}`, projectName, log);
+
+          //  Case 00015574
+          const packageNameFolder = packageName.replaceAll(/\//g, "-");
+          return storage.unzip(`${projectName}/${packageNameFolder}/${constants.ZIP_PACKAGE_NAME}`, projectName, log);
+
         })
         .then(() => log.log('End Unzip Package ' + packageName));
 
