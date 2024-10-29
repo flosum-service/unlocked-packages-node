@@ -50,6 +50,7 @@ class MetadataTypeParser {
       EscalationRule: '<?xml version="1.0" encoding="UTF-8"?><EscalationRules xmlns="http://soap.sforce.com/2006/04/metadata">',
       MatchingRule: '<?xml version="1.0" encoding="UTF-8"?><MatchingRules xmlns="http://soap.sforce.com/2006/04/metadata">',
       ManagedTopic: '<?xml version="1.0" encoding="UTF-8"?><ManagedTopics xmlns="http://soap.sforce.com/2006/04/metadata">',
+      EmailTemplate: '<?xml version="1.0" encoding="UTF-8"?><EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">',
       Other: '<?xml version="1.0" encoding="UTF-8"?><CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">'
     };
 
@@ -61,6 +62,7 @@ class MetadataTypeParser {
       WebLink: 'CustomObject',
       RecordType: 'CustomObject',
       FieldSet: 'CustomObject',
+      EmailTemplate: 'EmailTemplate',
       ValidationRule: 'CustomObject',
       BusinessProcess: 'CustomObject',
       SharingReason: 'CustomObject',
@@ -132,7 +134,7 @@ class MetadataTypeParser {
       CompactLayout: this.getChildTypesFromCustomObject,
       Document: this.getTypesFromFolder,
       EscalationRule: this.getChildTypesFromCustomObject,
-      EmailTemplate: this.getTypesFromFolder,
+      EmailTemplate: this.getFolderWithTypesFromFolder,
       FlexiPage: this.getDefaultTypes,
       Flow: this.getDefaultTypes,
       FlowDefinition: this.getDefaultTypes,
@@ -215,6 +217,17 @@ class MetadataTypeParser {
     });
 
     return this.chunkList;
+  }
+
+  //  EmailTemplate (folders)
+  getFolderWithTypesFromFolder(type, folderContentList, folderType) {
+    folderContentList.forEach((folderContentDirent) => {
+      if (folderContentDirent.name.includes('-meta.xml')) {
+        const folderXMLPath = `${this.projectPath}/${this.packageName}/${folderType}/${folderContentDirent.name}`;
+        this.zip.addLocalFile(`${folderXMLPath}`, `${folderType}`);   //  folder retrieved => new ZIP component
+      }
+    });
+    this.getTypesFromFolder(type, folderContentList, folderType);
   }
 
   //Document, EmailTemplate, Report
