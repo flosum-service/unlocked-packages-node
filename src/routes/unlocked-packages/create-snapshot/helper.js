@@ -165,7 +165,6 @@ function createComponents(packageTypeMap, type, packageName) {
       });
     });
   }
-
   return packageTypeMap;
 }
 
@@ -231,7 +230,6 @@ function mergeComponentsWithMetadataInfo(metadataInfoMap, packageMap, log) {
           }
         });
       });
-
       resolve(packageMap);
       log.log('End Merge Components With MetadataInfo');
     } catch (e) {

@@ -128,13 +128,12 @@ class MetadataTypeParser {
       CustomMetadata: this.getDefaultTypes,
       CustomApplication: this.getDefaultTypes,
       CustomLabel: this.customLabelProcessor,
-      // CustomLabel: this.getDefaultTypes,
       // CustomLabels: this.customLabelProcessor,
       CustomField: this.getChildTypesFromCustomObject,
       CompactLayout: this.getChildTypesFromCustomObject,
       Document: this.getTypesFromFolder,
       EscalationRule: this.getChildTypesFromCustomObject,
-      EmailTemplate: this.getFolderWithTypesFromFolder,
+      EmailTemplate: this.getTypesFromFolder,
       FlexiPage: this.getDefaultTypes,
       Flow: this.getDefaultTypes,
       FlowDefinition: this.getDefaultTypes,
@@ -175,7 +174,12 @@ class MetadataTypeParser {
       WorkflowKnowledgePublish: this.getChildTypesFromCustomObject,
       WorkflowAlert: this.getChildTypesFromCustomObject,
       WorkflowRule: this.getChildTypesFromCustomObject
-    }
+    };
+
+    this.folderTypeToComponentNameMap = {
+      email: 'EmailFolder'
+    };
+
   }
 
   init() {
@@ -219,20 +223,7 @@ class MetadataTypeParser {
     return this.chunkList;
   }
 
-  //  EmailTemplate (folders)
-  getFolderWithTypesFromFolder(type, folderContentList, folderType) {
-
-    for (const content of folderContentList) {
-      if (!content.name.includes('-meta.xml')) {
-        continue;
-      }
-      const folderXMLPath = `${this.projectPath}/${this.packageName}/${folderType}/${content.name}`;
-      this.zip.addLocalFile(folderXMLPath, folderType);   //  folder retrieved => new ZIP component
-    }
-    this.getTypesFromFolder(type, folderContentList, folderType);
-  }
-
-  //Document, EmailTemplate, Report
+  //Document, EmailTemplate + EmailFolder, Report
   getTypesFromFolder(type, folderContentList, folderType) {
     const typePath = `${this.projectPath}/${this.packageName}/${folderType}`;
     type.componentList.forEach((component) => {
@@ -262,6 +253,27 @@ class MetadataTypeParser {
       delete component.isDirectory;
       delete component.fileList;
     });
+
+    //  Case Number 00015775 (Unlocked package retrieval not pulling in emailtemplatefolder)
+    if (!this.folderTypeToComponentNameMap[folderType]) {
+      return;
+    }
+    let count = 0;
+    for (const component of folderContentList) {
+      if (!component.name.includes('-meta.xml')) {
+        continue;
+      }
+      const folderXMLPath = `${this.projectPath}/${this.packageName}/${folderType}/${component.name}`;
+      this.zip.addLocalFile(folderXMLPath, folderType);   //  folderXML add to ZIP component
+      component.componentType = this.folderTypeToComponentNameMap[folderType];
+      component.label = `${folderType}/${component.name}`;
+      component.apiName = (component.name).substring(0, (component.name).length - 9);
+      this.componentList.push(component);   //  add folder definitions for Metadata_Item__c
+      count++;
+    }
+    if (count > 0) {
+      this.log.log(`Component Type: ${this.folderTypeToComponentNameMap[folderType]}, count: ${count}`);
+    }
   }
 
   // ApexClass, ApexComponent, ApexPage, ApexTrigger, AppMenu, AuraDefinitionBundle,
