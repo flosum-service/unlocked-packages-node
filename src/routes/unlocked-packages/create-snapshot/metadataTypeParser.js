@@ -267,7 +267,7 @@ class MetadataTypeParser {
       this.zip.addLocalFile(folderXMLPath, folderType);   //  folderXML add to ZIP component
       component.componentType = this.folderTypeToComponentNameMap[folderType];
       component.label = `${folderType}/${component.name}`;
-      component.apiName = (component.name).substring(0, (component.name).length - 9);
+      component.apiName = (component.name).substring(0, (component.name).length - 9);   //  minus '-meta.xml'
       this.componentList.push(component);   //  add folder definitions for Metadata_Item__c
       count++;
     }
